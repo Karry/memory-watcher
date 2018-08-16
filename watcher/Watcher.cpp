@@ -43,10 +43,10 @@ Watcher::Watcher(long pid, long period):
           Qt::QueuedConnection);
 
   // for debug
-  shutdownTimer.setSingleShot(true);
-  shutdownTimer.setInterval(10000);
-  connect(&shutdownTimer, SIGNAL(timeout()), this, SLOT(close()));
-  shutdownTimer.start();
+  // shutdownTimer.setSingleShot(true);
+  // shutdownTimer.setInterval(10000);
+  // connect(&shutdownTimer, SIGNAL(timeout()), this, SLOT(close()));
+  // shutdownTimer.start();
 }
 
 Watcher::~Watcher()

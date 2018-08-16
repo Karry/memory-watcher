@@ -27,7 +27,7 @@ private:
   SmapsWatcher *watcher;
   Feeder *feeder;
 
-  QTimer shutdownTimer;
+  //QTimer shutdownTimer;
 };
 
 
