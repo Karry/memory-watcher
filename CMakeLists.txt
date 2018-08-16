@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.0)
 
 project(memory-watcher C CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # build should fail when compiler don't support standard defined by CMAKE_CXX_STANDARD
+
+add_definitions( -Wall -pedantic -fPIC -Wno-unused-function)
+add_definitions(-std=c++11)
 
 find_package( Qt5 ${QT_MIN_VERSION} 
               REQUIRED NO_MODULE COMPONENTS 
