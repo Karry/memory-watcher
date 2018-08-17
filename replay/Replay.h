@@ -17,27 +17,43 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_UTILS_H
-#define MEMORY_WATCHER_UTILS_H
 
-#include "Storage.h"
+#ifndef MEMORY_WATCHER_REPLAY_H
+#define MEMORY_WATCHER_REPLAY_H
 
-#include <QThread>
+#include <Storage.h>
+
+#include <QObject>
 #include <QString>
-#include <functional>
+#include <QTimer>
 
-class Utils {
+class Replay : public QObject {
+  Q_OBJECT
+  Q_DISABLE_COPY(Replay)
+
+signals:
+public slots:
+  void run();
+  void step();
+
 public:
+  Replay(const QString &db,
+         int interval = 20,
+         int idStep = 1);
 
-  static void catchUnixSignals(std::initializer_list<int> quitSignals,
-                               std::function<void(int)> *handler);
+  ~Replay();
 
-  static void cleanSignalCallback();
-
-  static void printMeasurementSmapsLike(const Measurement &measurement);
-  static void printMeasurement(const Measurement &measurement, MemoryType type);
-  static void clearScreen();
+private:
+  QTimer timer;
+  MemoryType type{Rss};
+  Storage storage;
+  Measurement measurement;
+  QString db;
+  qlonglong currentMeasurement;
+  qlonglong lastMeasurement;
+  int interval{20};
+  int idStep{1};
 };
 
 
-#endif //MEMORY_WATCHER_UTILS_H
+#endif //MEMORY_WATCHER_REPLAY_H

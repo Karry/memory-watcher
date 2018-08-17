@@ -76,6 +76,12 @@ public:
   bool insertData(const std::vector<MeasurementData> &measurements);
 
   bool getMemoryPeak(Measurement &measurement, MemoryType type = Rss);
+  bool getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges = false);
+
+  bool getMeasuremntRange(qlonglong &min,
+                          qlonglong &max);
+
+  bool getAllRanges(QMap<qlonglong, Range> &rangeMap);
 
   bool transaction()
   {
@@ -93,7 +99,8 @@ public:
   }
 
 private:
-  bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery);
+  bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
+  bool getRanges(QMap<qlonglong, Range> &rangeMap, QSqlQuery &sql);
 
 private:
   QSqlDatabase db;

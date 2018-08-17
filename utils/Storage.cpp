@@ -25,6 +25,8 @@
 
 #include "QVariantConverters.h"
 
+using namespace converters;
+
 Storage::Storage()
 {
 }
@@ -89,9 +91,18 @@ bool Storage::updateSchema()
     sql.append(",").append( "`pss` INTEGER NOT NULL ");
     sql.append(");");
 
+    //
+
     QSqlQuery q = db.exec(sql);
     if (q.lastError().isValid()) {
       qWarning() << "Creating data table failed" << q.lastError();
+      db.close();
+      return false;
+    }
+
+    QSqlQuery q2 = db.exec("CREATE INDEX idx_data_measurement_id ON data(measurement_id);");
+    if (q2.lastError().isValid()) {
+      qWarning() << "Creating data index failed" << q2.lastError();
       db.close();
       return false;
     }
@@ -142,7 +153,7 @@ qlonglong Storage::insertRange(qlonglong from, qlonglong to, QString permission,
     return 0;
   }
 
-  return converters::varToLong(sql.lastInsertId());
+  return varToLong(sql.lastInsertId());
 }
 
 qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss)
@@ -161,7 +172,7 @@ qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlong
     return 0;
   }
 
-  return converters::varToLong(sql.lastInsertId());
+  return varToLong(sql.lastInsertId());
 }
 
 bool Storage::insertData(qlonglong measurementId, const std::vector<MeasurementData> &measurements)
@@ -185,7 +196,34 @@ bool Storage::insertData(qlonglong measurementId, const std::vector<MeasurementD
   return true;
 }
 
-bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery)
+bool Storage::getRanges(QMap<qlonglong, Range> &rangeMap, QSqlQuery &sql)
+{
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+  rangeMap.clear();
+  while (sql.next()){
+    Range range;
+    range.from = varToLong(sql.value("from"));
+    range.to = varToLong(sql.value("to"));
+    range.permission = varToString(sql.value("permission"));
+    range.name = varToString(sql.value("name"));
+    rangeMap[varToLong(sql.value("id"))] = range;
+  }
+  return true;
+}
+
+bool Storage::getAllRanges(QMap<qlonglong, Range> &rangeMap)
+{
+  QSqlQuery sql(db);
+
+  sql.prepare("SELECT * FROM `range`;");
+  return getRanges(rangeMap, sql);
+}
+
+bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges)
 {
   measurementQuery.exec();
   if (measurementQuery.lastError().isValid()) {
@@ -196,27 +234,26 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
     qWarning() << "No measurement found";
     return false;
   }
-  measurement.id = converters::varToLong(measurementQuery.value("id"));
-  measurement.time = converters::varToDateTime(measurementQuery.value("time"));
+  measurement.id = varToLong(measurementQuery.value("id"));
+  measurement.time = varToDateTime(measurementQuery.value("time"));
 
   QSqlQuery sql(db);
 
   // ranges
-  sql.prepare("SELECT * FROM `range` WHERE `id` IN (SELECT `range_id` FROM `data` WHERE `measurement_id` = :measurement_id);");
-  sql.bindValue(":measurement_id", measurement.id);
-  sql.exec();
-  if (sql.lastError().isValid()) {
-    qWarning() << "Select ranges failed" << sql.lastError();
-    return false;
-  }
-  measurement.rangeMap.clear();
-  while (sql.next()){
-    Range range;
-    range.from = converters::varToLong(sql.value("from"));
-    range.to = converters::varToLong(sql.value("to"));
-    range.permission = converters::varToString(sql.value("permission"));
-    range.name = converters::varToString(sql.value("name"));
-    measurement.rangeMap[converters::varToLong(sql.value("id"))] = range;
+  if (cacheRanges){
+    if (measurement.rangeMap.empty()){
+      getAllRanges(measurement.rangeMap);
+    }
+  }else {
+    sql.prepare(
+      "SELECT * FROM `range` WHERE `id` IN (SELECT `range_id` FROM `data` WHERE `measurement_id` = :measurement_id);");
+    sql.bindValue(":measurement_id", measurement.id);
+
+    measurement.rangeMap.clear();
+    if (!getRanges(measurement.rangeMap, sql)) {
+      qWarning() << "Select ranges failed" << sql.lastError();
+      return false;
+    }
   }
 
   // data
@@ -230,9 +267,9 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   measurement.data.clear();
   while (sql.next()) {
     MeasurementData data;
-    data.rangeId = converters::varToLong(sql.value("range_id"));;
-    data.rss = converters::varToLong(sql.value("rss"));
-    data.pss = converters::varToLong(sql.value("pss"));
+    data.rangeId = varToLong(sql.value("range_id"));;
+    data.rss = varToLong(sql.value("rss"));
+    data.pss = varToLong(sql.value("pss"));
     measurement.data << data;
   }
 
@@ -250,4 +287,33 @@ bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type)
     sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement`) LIMIT 1;");
   }
   return getMeasurement(measurement, sql);
+}
+
+bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges)
+{
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `measurement` WHERE `id` = :id;");
+  sql.bindValue(":id", id);
+  return getMeasurement(measurement, sql, cacheRanges);
+}
+
+bool Storage::getMeasuremntRange(qlonglong &min,
+                                 qlonglong &max)
+{
+  QSqlQuery sql(db);
+  sql.prepare("SELECT MIN(`id`) AS min, MAX(`id`) AS max FROM `measurement`");
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+  if (!sql.next()){
+    qWarning() << "No result";
+    return false;
+  }
+
+  min = varToLong(sql.value("min"));
+  max = varToLong(sql.value("max"));
+
+  return true;
 }

@@ -20,6 +20,7 @@
 #include "Utils.h"
 
 #include <QCoreApplication>
+#include <QProcess>
 
 #include <initializer_list>
 #include <unordered_map>
@@ -152,7 +153,7 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 
   constexpr int indent = 43;
 
-  std::cout << "peak measurement: " << measurement.id << std::endl;
+  std::cout << "measurement:      " << measurement.id << std::endl;
   std::cout << "time:             " << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
 
   std::cout << std::endl;
@@ -177,4 +178,11 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 
   std::cout << std::endl;
   std::cout << "sum:              " << align(sum, indent) << " Ki" << std::endl;
+}
+
+void Utils::clearScreen()
+{
+  //system("clear");
+  // TODO: remove execution of external binary
+  QProcess::execute("clear");
 }
