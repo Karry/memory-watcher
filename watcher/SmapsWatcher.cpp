@@ -24,17 +24,6 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-size_t SmapsRange::sizeBytes()
-{
-  return to - from;
-}
-
-void SmapsRange::debugPrint()
-{
-  qDebug() << QString().sprintf("%zx-%zx", from, to) << permission
-           << name << rss << pss;
-}
-
 SmapsWatcher::SmapsWatcher(QThread *thread, long pid, long period):
   thread(thread), pid(pid), period(period)
 {

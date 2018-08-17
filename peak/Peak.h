@@ -17,26 +17,31 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_UTILS_H
-#define MEMORY_WATCHER_UTILS_H
 
-#include "Storage.h"
+#ifndef MEMORY_WATCHER_PEAK_H
+#define MEMORY_WATCHER_PEAK_H
 
-#include <QThread>
+#include <Storage.h>
+
+#include <QObject>
 #include <QString>
-#include <functional>
 
-class Utils {
+class Peak : public QObject {
+  Q_OBJECT
+  Q_DISABLE_COPY(Peak)
+
+signals:
+public slots:
+  void run();
+
 public:
+  Peak(const QString &db);
+  ~Peak();
 
-  static void catchUnixSignals(std::initializer_list<int> quitSignals,
-                               std::function<void(int)> *handler);
-
-  static void cleanSignalCallback();
-
-  static void printMeasurementSmapsLike(const Measurement &measurement);
-  static void printMeasurement(const Measurement &measurement, MemoryType type);
+private:
+  Storage storage;
+  QString db;
 };
 
 
-#endif //MEMORY_WATCHER_UTILS_H
+#endif //MEMORY_WATCHER_PEAK_H

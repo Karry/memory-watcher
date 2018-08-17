@@ -17,26 +17,24 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_UTILS_H
-#define MEMORY_WATCHER_UTILS_H
+#ifndef MEMORY_WATCHER_SMAPSRANGE_H
+#define MEMORY_WATCHER_SMAPSRANGE_H
 
-#include "Storage.h"
-
-#include <QThread>
 #include <QString>
-#include <functional>
 
-class Utils {
+class SmapsRange {
 public:
+  void debugPrint();
+  size_t sizeBytes();
 
-  static void catchUnixSignals(std::initializer_list<int> quitSignals,
-                               std::function<void(int)> *handler);
-
-  static void cleanSignalCallback();
-
-  static void printMeasurementSmapsLike(const Measurement &measurement);
-  static void printMeasurement(const Measurement &measurement, MemoryType type);
+public:
+  size_t from{0};
+  size_t to{0};
+  QString permission;
+  QString name;
+  size_t rss{0}; // Ki
+  size_t pss{0}; // Ki
 };
 
 
-#endif //MEMORY_WATCHER_UTILS_H
+#endif //MEMORY_WATCHER_SMAPSRANGE_H

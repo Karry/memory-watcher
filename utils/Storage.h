@@ -25,13 +25,35 @@
 #include <QtCore/QObject>
 #include <QSqlDatabase>
 #include <QDateTime>
+#include <QMap>
 
 class MeasurementData
 {
 public:
-  qlonglong rangeId;
-  qlonglong rss;
-  qlonglong pss;
+  qlonglong rangeId{0};
+  qlonglong rss{0};
+  qlonglong pss{0};
+};
+
+class Range {
+public:
+  qlonglong from{0};
+  qlonglong to{0};
+  QString permission;
+  QString name;
+};
+
+class Measurement {
+public:
+  qlonglong id{0};
+  QDateTime time;
+  QMap<qlonglong, Range> rangeMap;
+  QList<MeasurementData> data;
+};
+
+enum MemoryType {
+  Rss,
+  Pss
 };
 
 class Storage : public QObject {
@@ -53,6 +75,8 @@ public:
 
   bool insertData(const std::vector<MeasurementData> &measurements);
 
+  bool getMemoryPeak(Measurement &measurement, MemoryType type = Rss);
+
   bool transaction()
   {
     return db.transaction();
@@ -67,6 +91,9 @@ public:
   {
     return db.rollback();
   }
+
+private:
+  bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery);
 
 private:
   QSqlDatabase db;

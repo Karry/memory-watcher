@@ -20,25 +20,12 @@
 #ifndef MEMORY_WATCHER_SMAPSWATCHER_H
 #define MEMORY_WATCHER_SMAPSWATCHER_H
 
+#include <SmapsRange.h>
 
 #include <QtCore/QObject>
 #include <QThread>
 #include <QTimer>
 #include <QDateTime>
-
-class SmapsRange {
-public:
-  void debugPrint();
-  size_t sizeBytes();
-
-public:
-  size_t from{0};
-  size_t to{0};
-  QString permission;
-  QString name;
-  size_t rss{0}; // Ki
-  size_t pss{0}; // Ki
-};
 
 class SmapsWatcher : public QObject{
   Q_OBJECT

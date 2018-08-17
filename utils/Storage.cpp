@@ -184,3 +184,70 @@ bool Storage::insertData(qlonglong measurementId, const std::vector<MeasurementD
 
   return true;
 }
+
+bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery)
+{
+  measurementQuery.exec();
+  if (measurementQuery.lastError().isValid()) {
+    qWarning() << "Select measurement failed" << measurementQuery.lastError();
+    return false;
+  }
+  if (!measurementQuery.next()){
+    qWarning() << "No measurement found";
+    return false;
+  }
+  measurement.id = converters::varToLong(measurementQuery.value("id"));
+  measurement.time = converters::varToDateTime(measurementQuery.value("time"));
+
+  QSqlQuery sql(db);
+
+  // ranges
+  sql.prepare("SELECT * FROM `range` WHERE `id` IN (SELECT `range_id` FROM `data` WHERE `measurement_id` = :measurement_id);");
+  sql.bindValue(":measurement_id", measurement.id);
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+  measurement.rangeMap.clear();
+  while (sql.next()){
+    Range range;
+    range.from = converters::varToLong(sql.value("from"));
+    range.to = converters::varToLong(sql.value("to"));
+    range.permission = converters::varToString(sql.value("permission"));
+    range.name = converters::varToString(sql.value("name"));
+    measurement.rangeMap[converters::varToLong(sql.value("id"))] = range;
+  }
+
+  // data
+  sql.prepare("SELECT * FROM `data` WHERE `measurement_id` = :measurement_id");
+  sql.bindValue(":measurement_id", measurement.id);
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+  measurement.data.clear();
+  while (sql.next()) {
+    MeasurementData data;
+    data.rangeId = converters::varToLong(sql.value("range_id"));;
+    data.rss = converters::varToLong(sql.value("rss"));
+    data.pss = converters::varToLong(sql.value("pss"));
+    measurement.data << data;
+  }
+
+  return true;
+}
+
+bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type)
+{
+  QSqlQuery sql(db);
+
+  // measurement
+  if (type == Rss) {
+    sql.prepare("SELECT * FROM `measurement` WHERE rss_sum = (SELECT MAX(rss_sum) FROM `measurement`) LIMIT 1;");
+  }else{
+    sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement`) LIMIT 1;");
+  }
+  return getMeasurement(measurement, sql);
+}

@@ -17,26 +17,19 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_UTILS_H
-#define MEMORY_WATCHER_UTILS_H
 
-#include "Storage.h"
+#include "SmapsRange.h"
 
-#include <QThread>
-#include <QString>
-#include <functional>
+#include <QDebug>
 
-class Utils {
-public:
+size_t SmapsRange::sizeBytes()
+{
+  return to - from;
+}
 
-  static void catchUnixSignals(std::initializer_list<int> quitSignals,
-                               std::function<void(int)> *handler);
+void SmapsRange::debugPrint()
+{
+  qDebug() << QString().sprintf("%zx-%zx", from, to) << permission
+           << name << rss << pss;
+}
 
-  static void cleanSignalCallback();
-
-  static void printMeasurementSmapsLike(const Measurement &measurement);
-  static void printMeasurement(const Measurement &measurement, MemoryType type);
-};
-
-
-#endif //MEMORY_WATCHER_UTILS_H

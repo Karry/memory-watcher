@@ -3,12 +3,14 @@ set(HEADER_FILES
     Utils.h
     ThreadPool.h
     Storage.h
-    QVariantConverters.h)
+    QVariantConverters.h
+    SmapsRange.h)
 
 set(SOURCE_FILES
     Utils.cpp
     ThreadPool.cpp
-    Storage.cpp)
+    Storage.cpp
+    SmapsRange.cpp)
 
 add_library(memory-watcher-utils ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET memory-watcher-utils PROPERTY CXX_STANDARD 11)
