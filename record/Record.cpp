@@ -18,7 +18,7 @@
 */
 
 #include "SmapsWatcher.h"
-#include "Watcher.h"
+#include "Record.h"
 
 #include <Utils.h>
 #include <ThreadPool.h>
@@ -30,7 +30,7 @@
 #include <signal.h>
 
 
-void Watcher::close()
+void Record::close()
 {
   qDebug() << "close()";
   watcher->deleteLater();
@@ -38,7 +38,7 @@ void Watcher::close()
   threadPool.close();
 }
 
-Watcher::Watcher(long pid, long period):
+Record::Record(long pid, long period):
   watcherThread(threadPool.makeThread("watcher")),
   watcher(new SmapsWatcher(watcherThread, pid, period)),
   feeder(new Feeder())
@@ -67,7 +67,7 @@ Watcher::Watcher(long pid, long period):
   // shutdownTimer.start();
 }
 
-Watcher::~Watcher()
+Record::~Record()
 {
   qDebug() << "~Watcher";
   QCoreApplication::quit();
@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
     period = app.arguments()[2].toLong();
   }
 
-  Watcher *watcher = new Watcher(pid, period);
-  std::function<void(int)> signalCallback = [&](int){ watcher->close(); };
+  Record *record = new Record(pid, period);
+  std::function<void(int)> signalCallback = [&](int){ record->close(); };
   Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
                           &signalCallback);
 

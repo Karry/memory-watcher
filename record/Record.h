@@ -17,8 +17,8 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_WATCHER_H
-#define MEMORY_WATCHER_WATCHER_H
+#ifndef MEMORY_WATCHER_RECORD_H
+#define MEMORY_WATCHER_RECORD_H
 
 #include "SmapsWatcher.h"
 #include "Feeder.h"
@@ -28,16 +28,16 @@
 #include <QObject>
 #include <QThread>
 
-class Watcher : public QObject {
+class Record : public QObject {
   Q_OBJECT
-  Q_DISABLE_COPY(Watcher)
+  Q_DISABLE_COPY(Record)
 
 public slots:
   void close();
 
 public:
-  Watcher(long pid, long period);
-  ~Watcher();
+  Record(long pid, long period);
+  ~Record();
 
 private:
   ThreadPool threadPool;
@@ -49,4 +49,4 @@ private:
 };
 
 
-#endif //MEMORY_WATCHER_WATCHER_H
+#endif //MEMORY_WATCHER_RECORD_H

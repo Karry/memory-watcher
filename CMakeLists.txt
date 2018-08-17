@@ -26,5 +26,5 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 add_subdirectory(utils)
-add_subdirectory(watcher)
+add_subdirectory(record)
 add_subdirectory(peak)
