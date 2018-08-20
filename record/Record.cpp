@@ -51,7 +51,7 @@ Record::Record(long pid, long period):
                    watcher, SLOT(init()));
   watcherThread->start();
 
-  if (!feeder->init("measurement.db")){
+  if (!feeder->init(QString("measurement.%1.db").arg(pid))){
     close();
     return;
   }
