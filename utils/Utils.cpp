@@ -154,7 +154,9 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
   constexpr int indent = 43;
 
   std::cout << "measurement:      " << measurement.id << std::endl;
-  std::cout << "time:             " << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
+
+  // Qt::ISODateWithMs was introduced in Qt 5.8
+  std::cout << "time:             " << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz[Z|[+|-]HH:mm]").toStdString() << std::endl;
 
   std::cout << std::endl;
   std::cout << "thread stacks:    " << align(threadStacks, indent) << " Ki" << std::endl;
