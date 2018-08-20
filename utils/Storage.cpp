@@ -276,17 +276,32 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   return true;
 }
 
-bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type)
+bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type, qint64 from, qint64 to)
 {
   QSqlQuery sql(db);
 
   // measurement
   if (type == Rss) {
-    sql.prepare("SELECT * FROM `measurement` WHERE rss_sum = (SELECT MAX(rss_sum) FROM `measurement`) LIMIT 1;");
+    sql.prepare("SELECT * FROM `measurement` WHERE rss_sum = (SELECT MAX(rss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
   }else{
-    sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement`) LIMIT 1;");
+    sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
   }
+  sql.bindValue(":from", from);
+  sql.bindValue(":to", to);
   return getMeasurement(measurement, sql);
+}
+
+qint64 Storage::measurementCount()
+{
+  QSqlQuery sql(db);
+  sql.prepare("SELECT COUNT(*) AS `cnt` FROM `measurement`");
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select count of measurements failed" << sql.lastError();
+    return -1;
+  }
+  sql.next();
+  return varToLong(sql.value("cnt"));
 }
 
 bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges)

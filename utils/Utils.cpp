@@ -86,12 +86,6 @@ std::string align(size_t mem, int size = 9)
   return str.toStdString();
 }
 
-struct Mapping
-{
-  std::string name;
-  size_t size;
-};
-
 void Utils::printMeasurementSmapsLike(const Measurement &measurement)
 {
   for (const auto &d: measurement.data) {
@@ -106,13 +100,14 @@ void Utils::printMeasurementSmapsLike(const Measurement &measurement)
   }
 }
 
-void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
+void Utils::group(MeasurementGroups &g, const Measurement &measurement, MemoryType type, bool groupSockets)
 {
-  size_t threadStacks = 0;
-  size_t anonymous = 0;
-  size_t heap = 0;
-  size_t sum = 0;
-  std::unordered_map<std::string, size_t> mappings;
+  g.threadStacks = 0;
+  g.anonymous = 0;
+  g.heap = 0;
+  g.sum = 0;
+  g.mappings.clear();
+
   Range lastMapping;
   for (const auto &d: measurement.data){
     const Range &r = measurement.rangeMap[d.rangeId];
@@ -123,34 +118,47 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
     }
 
     if (r.name.startsWith("[stack")) {
-      threadStacks += mem;
+      g.threadStacks += mem;
+    } else if (groupSockets && r.name.startsWith("socket:")) {
+      g.sockets += mem;
     } else if (r.name == "[heap]") {
-      heap += mem;
+      g.heap += mem;
     } else if (r.name.isEmpty()) {
 
       if (r.from == lastMapping.to && r.permission == "rw-p"){
         // assume that this is .bss library area
         auto stdName = lastMapping.name.toStdString();
-        mappings[stdName] = mappings[stdName] + mem;
+        g.mappings[stdName] = g.mappings[stdName] + mem;
       }else {
-        anonymous += mem;
+        g.anonymous += mem;
       }
     } else {
       auto stdName = r.name.toStdString();
       lastMapping = r;
-      mappings[stdName] = mappings[stdName] + mem;
+      g.mappings[stdName] = g.mappings[stdName] + mem;
     }
-    sum += mem;
+    g.sum += mem;
   }
+}
 
-  QList<Mapping> sortedMappings;
+std::vector<Mapping> MeasurementGroups::sortedMappings() const
+{
+  std::vector<Mapping> sortedMappings;
+  sortedMappings.reserve(mappings.size());
   for (const auto &it: mappings){
     Mapping m{it.first, it.second};
-    sortedMappings << m;
+    sortedMappings.push_back(m);
   }
   std::sort(sortedMappings.begin(), sortedMappings.end(), [](const Mapping &a, const Mapping &b) {
     return a.size > b.size;
   });
+  return sortedMappings;
+}
+
+void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
+{
+  MeasurementGroups g;
+  group(g, measurement, type);
 
   constexpr int indent = 43;
 
@@ -163,14 +171,14 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 #endif
 
   std::cout << std::endl;
-  std::cout << "thread stacks:    " << align(threadStacks, indent) << " Ki" << std::endl;
-  std::cout << "heap:             " << align(heap, indent) << " Ki" << std::endl;
-  std::cout << "anonymous:        " << align(anonymous, indent) << " Ki" << std::endl;
+  std::cout << "thread stacks:    " << align(g.threadStacks, indent) << " Ki" << std::endl;
+  std::cout << "heap:             " << align(g.heap, indent) << " Ki" << std::endl;
+  std::cout << "anonymous:        " << align(g.anonymous, indent) << " Ki" << std::endl;
 
   int i=0;
   size_t other = 0;
   std::cout << std::endl;
-  for (const auto &m: sortedMappings){
+  for (const auto &m: g.sortedMappings()){
     if (i < 20){
       std::cout << m.name << " " << align(m.size, 60 - m.name.size()) << " Ki" << std::endl;
     } else {
@@ -183,7 +191,7 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
   std::cout << "other mappings:   " << align(other, indent) << " Ki" << std::endl;
 
   std::cout << std::endl;
-  std::cout << "sum:              " << align(sum, indent) << " Ki" << std::endl;
+  std::cout << "sum:              " << align(g.sum, indent) << " Ki" << std::endl;
 }
 
 void Utils::clearScreen()

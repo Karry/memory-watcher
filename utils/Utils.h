@@ -24,7 +24,29 @@
 
 #include <QThread>
 #include <QString>
+
 #include <functional>
+#include <unordered_map>
+
+struct Mapping
+{
+  std::string name;
+  size_t size;
+};
+
+class MeasurementGroups{
+public:
+  std::vector<Mapping> sortedMappings() const;
+
+public:
+  size_t threadStacks{0};
+  size_t anonymous{0};
+  size_t heap{0};
+  size_t sockets{0};
+  size_t sum{0};
+
+  std::unordered_map<std::string, size_t> mappings;
+};
 
 class Utils {
 public:
@@ -35,6 +57,7 @@ public:
   static void cleanSignalCallback();
 
   static void printMeasurementSmapsLike(const Measurement &measurement);
+  static void group(MeasurementGroups &g, const Measurement &measurement, MemoryType type, bool groupSockets = false);
   static void printMeasurement(const Measurement &measurement, MemoryType type);
   static void clearScreen();
 };

@@ -25,6 +25,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QtWidgets/QMainWindow>
 
 class Chart : public QObject {
   Q_OBJECT
@@ -41,6 +42,7 @@ public:
 private:
   Storage storage;
   QString db;
+  QMainWindow window;
 };
 
 

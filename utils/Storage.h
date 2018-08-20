@@ -75,7 +75,13 @@ public:
 
   bool insertData(const std::vector<MeasurementData> &measurements);
 
-  bool getMemoryPeak(Measurement &measurement, MemoryType type = Rss);
+  qint64 measurementCount();
+
+  bool getMemoryPeak(Measurement &measurement,
+                     MemoryType type = Rss,
+                     qint64 from = std::numeric_limits<qint64>::min(),
+                     qint64 to = std::numeric_limits<qint64>::max());
+
   bool getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges = false);
 
   bool getMeasuremntRange(qlonglong &min,
