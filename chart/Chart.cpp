@@ -56,9 +56,20 @@ void Chart::run()
     return;
   }
 
+  // chart configuration
   MemoryType type = MemoryType::Rss;
-  qint64 measurementCount = storage.measurementCount();
-  qint64 pointCount = 1024;
+
+  qint64 measurementFrom = 0;
+  qint64 measurementTo = storage.measurementCount();
+  qint64 pointCount = std::min((qint64)1024, measurementTo - measurementFrom);
+
+  // qint64 measurementCenter = 354250;
+  // qint64 pointCount = 128;
+  // qint64 measurementFrom = measurementCenter - pointCount/2;
+  // qint64 measurementTo = measurementCenter + pointCount/2;
+
+  // compute steps
+  qint64 measurementCount = measurementTo - measurementFrom;
   qint64 stepSize = measurementCount / pointCount;
   std::vector<MeasurementGroups> measurements(pointCount);
   QTime time;
@@ -66,7 +77,10 @@ void Chart::run()
   MeasurementGroups peak;
   for (qint64 step = 0; step < pointCount; step ++){
     Measurement measurement;
-    storage.getMemoryPeak(measurement, type, step * stepSize, (step * stepSize) + stepSize);
+    storage.getMemoryPeak(measurement, type,
+      measurementFrom + step * stepSize,
+      measurementFrom + (step * stepSize) + stepSize);
+
     Utils::group(measurements[step], measurement, type, true);
     if (peak.sum < measurements[step].sum) {
       peak = measurements[step];
