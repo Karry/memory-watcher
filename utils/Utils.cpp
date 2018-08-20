@@ -21,6 +21,7 @@
 
 #include <QCoreApplication>
 #include <QProcess>
+#include <QtGlobal>
 
 #include <initializer_list>
 #include <unordered_map>
@@ -155,8 +156,11 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 
   std::cout << "measurement:      " << measurement.id << std::endl;
 
-  // Qt::ISODateWithMs was introduced in Qt 5.8
-  std::cout << "time:             " << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz[Z|[+|-]HH:mm]").toStdString() << std::endl;
+#if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
+  std::cout << "time:             " << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
+#else
+  std::cout << "time:             " << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
+#endif
 
   std::cout << std::endl;
   std::cout << "thread stacks:    " << align(threadStacks, indent) << " Ki" << std::endl;
