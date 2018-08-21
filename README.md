@@ -11,7 +11,14 @@ libc allocator.
 ## How it works
 
 `memory-watcher` reads `/proc/<PID>/smaps` file periodically and store information about memory regions 
-to SQLite database. This database may be read by custom scripts or provided tools...      
+to SQLite database. This database may be read by custom scripts or provided tools...
+
+Note that Rss and Pss sizes obtained from `smaps` file may differ from Rss visible in `status`, 
+`statm` or `getrusage` syscall. As explained 
+on StackOverflow ["Linux OS: smaps vs statm"](https://stackoverflow.com/a/30799817/1632737)
+and LKML thread ["why smaps Rss is different from statm"](https://lkml.org/lkml/2016/3/30/171), 
+this value is read from counters that may be outdated (performance optimisation) 
+and most likely compute Rss differently (TODO: explanation). 
 
 ### Record tool
 
