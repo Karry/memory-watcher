@@ -20,4 +20,8 @@ target_link_libraries(memory-chart
     memory-watcher-utils
     )
 
+install(TARGETS memory-chart
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
 

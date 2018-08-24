@@ -22,4 +22,8 @@ target_link_libraries(memory-record
     memory-watcher-utils
     )
 
+install(TARGETS memory-record
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
 

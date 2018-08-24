@@ -19,4 +19,8 @@ target_link_libraries(memory-peak
     memory-watcher-utils
     )
 
+install(TARGETS memory-peak
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
 

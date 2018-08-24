@@ -19,4 +19,7 @@ target_link_libraries(memory-replay
     memory-watcher-utils
     )
 
-
+install(TARGETS memory-replay
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
