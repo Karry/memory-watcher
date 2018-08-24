@@ -24,6 +24,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QDebug>
+#include <QFileInfo>
 
 #include <iostream>
 #include <unordered_map>
@@ -40,6 +41,11 @@ Peak::~Peak()
 
 void Peak::run()
 {
+  if (!QFileInfo(db).exists()){
+    qWarning() << "File don't exists" << db;
+    deleteLater();
+    return;
+  }
   if (!storage.init(db)){
     qWarning() << "Failed to open database" << db;
     deleteLater();

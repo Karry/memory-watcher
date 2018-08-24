@@ -30,6 +30,7 @@
 #include <QChartView>
 #include <QAreaSeries>
 #include <QCategoryAxis>
+#include <QFileInfo>
 
 #include <iostream>
 #include <unordered_map>
@@ -50,6 +51,12 @@ Chart::~Chart()
 
 void Chart::run()
 {
+  if (!QFileInfo(db).exists()){
+    qWarning() << "File don't exists" << db;
+    deleteLater();
+    return;
+  }
+
   if (!storage.init(db)){
     qWarning() << "Failed to open database" << db;
     deleteLater();
