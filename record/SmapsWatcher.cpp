@@ -96,7 +96,7 @@ void SmapsWatcher::update()
       parseRange(range, line);
       rangeLine = false;
     }else{
-      if (line.startsWith("VmFlags:")){
+      if (line.startsWith(lastLineStart)){
         rangeLine = true;
         ranges << range;
         //range.debugPrint();
@@ -116,6 +116,34 @@ void SmapsWatcher::init()
 {
   timer.setSingleShot(false);
   timer.setInterval(period);
+
+  if (!smapsFile.exists()){
+    qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
+    return;
+  }
+
+  QFile inputFile(smapsFile.absoluteFilePath());
+  if (!inputFile.open(QIODevice::ReadOnly)) {
+    qWarning() << "Can't open file" << smapsFile.absoluteFilePath();
+    return;
+  }
+  QTextStream in(&inputFile);
+  QString lastLine;
+  for (QString line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
+    lastLine = line;
+  }
+  inputFile.close();
+  if (lastLine.isEmpty()){
+    qWarning() << "Last line is empty" << smapsFile.absoluteFilePath();
+    return;
+  }
+  QStringList arr = lastLine.split(":", QString::SkipEmptyParts);
+  if (arr.size() != 2){
+    qWarning() << "Last line is malformed" << smapsFile.absoluteFilePath();
+    return;
+  }
+  lastLineStart = arr[0];
+  qDebug() << "lastLineStart:" << lastLineStart;
 
   connect(&timer, SIGNAL(timeout()), this, SLOT(update()));
 

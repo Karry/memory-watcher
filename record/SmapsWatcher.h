@@ -51,6 +51,7 @@ private:
   QThread *thread;
   long period;
   QFileInfo smapsFile;
+  QString lastLineStart;
 };
 
 
