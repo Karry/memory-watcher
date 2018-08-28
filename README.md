@@ -30,6 +30,15 @@ This tool records process memory with given period (milliseconds) and store meas
 
 Tool will exit on SIGQUIT, SIGINT (Ctrl+C), SIGTERM or SIGHUP signal.
 
+When you want to record memory on small system where installation of Qt would be problematic, 
+it is possible to do it via sshfs (sftp-server is required on the remote device).
+
+```bash
+mkdir proc
+sshfs -odirect_io  root@192.168.1.1:/proc `pwd`/proc
+PROCFS=./proc memory-record remote-PID period-ms
+```
+
 ### Peak tool
 
 This tool select peak memory (Rss) usage in recording and prints summary.

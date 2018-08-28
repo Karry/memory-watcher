@@ -24,8 +24,10 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-SmapsWatcher::SmapsWatcher(QThread *thread, long pid, long period):
-  thread(thread), pid(pid), period(period)
+SmapsWatcher::SmapsWatcher(QThread *thread, long pid, long period, QString procFs):
+  thread(thread),
+  period(period),
+  smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid))
 {
   timer.moveToThread(thread);
 }
@@ -73,7 +75,7 @@ void SmapsWatcher::update()
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
   }
-  QFileInfo smapsFile(QString("/proc/%1/smaps").arg(pid));
+
   if (!smapsFile.exists()){
     qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
     return;

@@ -26,6 +26,8 @@
 #include <QThread>
 #include <QTimer>
 #include <QDateTime>
+#include <QtCore/QProcessEnvironment>
+#include <QtCore/QFileInfo>
 
 class SmapsWatcher : public QObject{
   Q_OBJECT
@@ -39,14 +41,16 @@ public slots:
   void update();
 
 public:
-  SmapsWatcher(QThread *thread, long pid, long period);
+  SmapsWatcher(QThread *thread, long pid, long period,
+               QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+
   ~SmapsWatcher();
 
 private:
   QTimer timer;
   QThread *thread;
-  long pid;
   long period;
+  QFileInfo smapsFile;
 };
 
 
