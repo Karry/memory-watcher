@@ -20,7 +20,7 @@
 #ifndef MEMORY_WATCHER_RECORD_H
 #define MEMORY_WATCHER_RECORD_H
 
-#include "SmapsWatcher.h"
+#include "MemoryWatcher.h"
 #include "Feeder.h"
 
 #include <ThreadPool.h>
@@ -42,7 +42,7 @@ public:
 private:
   ThreadPool threadPool;
   QThread *watcherThread;
-  SmapsWatcher *watcher;
+  MemoryWatcher *watcher;
   Feeder *feeder;
 
   //QTimer shutdownTimer;

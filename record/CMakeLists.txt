@@ -1,11 +1,11 @@
 
 set(HEADER_FILES
-    SmapsWatcher.h
+    MemoryWatcher.h
     Record.h
     Feeder.h)
 
 set(SOURCE_FILES
-    SmapsWatcher.cpp
+    MemoryWatcher.cpp
     Record.cpp
     Feeder.cpp)
 

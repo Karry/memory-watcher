@@ -20,7 +20,7 @@
 #ifndef MEMORY_WATCHER_FEEDER_H
 #define MEMORY_WATCHER_FEEDER_H
 
-#include "SmapsWatcher.h"
+#include "MemoryWatcher.h"
 
 #include <Storage.h>
 

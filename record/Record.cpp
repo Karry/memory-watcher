@@ -17,7 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "SmapsWatcher.h"
+#include "MemoryWatcher.h"
 #include "Record.h"
 
 #include <Utils.h>
@@ -40,7 +40,7 @@ void Record::close()
 
 Record::Record(long pid, long period):
   watcherThread(threadPool.makeThread("watcher")),
-  watcher(new SmapsWatcher(watcherThread, pid, period)),
+  watcher(new MemoryWatcher(watcherThread, pid, period)),
   feeder(new Feeder())
 {
   connect(&threadPool, SIGNAL(closed()), this, SLOT(deleteLater()));

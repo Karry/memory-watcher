@@ -17,14 +17,14 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "SmapsWatcher.h"
+#include "MemoryWatcher.h"
 
 #include <QDebug>
 #include <QtCore/QFileInfo>
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-SmapsWatcher::SmapsWatcher(QThread *thread, long pid, long period, QString procFs):
+MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, QString procFs):
   thread(thread),
   period(period),
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid))
@@ -32,12 +32,12 @@ SmapsWatcher::SmapsWatcher(QThread *thread, long pid, long period, QString procF
   timer.moveToThread(thread);
 }
 
-SmapsWatcher::~SmapsWatcher()
+MemoryWatcher::~MemoryWatcher()
 {
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
   }
-  qDebug() << "~SmapsWatcher";
+  qDebug() << "MemoryWatcherr";
   timer.stop();
   thread->quit();
 }
@@ -70,7 +70,7 @@ void parseRange(SmapsRange &range, const QString &line)
   range.pss = 0;
 }
 
-void SmapsWatcher::update()
+void MemoryWatcher::update()
 {
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
@@ -112,7 +112,7 @@ void SmapsWatcher::update()
   emit snapshot(QDateTime::currentDateTime(), ranges);
 }
 
-void SmapsWatcher::init()
+void MemoryWatcher::init()
 {
   timer.setSingleShot(false);
   timer.setInterval(period);

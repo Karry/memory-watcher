@@ -29,9 +29,9 @@
 #include <QtCore/QProcessEnvironment>
 #include <QtCore/QFileInfo>
 
-class SmapsWatcher : public QObject{
+class MemoryWatcher : public QObject{
   Q_OBJECT
-  Q_DISABLE_COPY(SmapsWatcher)
+  Q_DISABLE_COPY(MemoryWatcher)
 
 signals:
   void snapshot(QDateTime time, QList<SmapsRange> ranges);
@@ -41,10 +41,10 @@ public slots:
   void update();
 
 public:
-  SmapsWatcher(QThread *thread, long pid, long period,
+  MemoryWatcher(QThread *thread, long pid, long period,
                QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
 
-  ~SmapsWatcher();
+  ~MemoryWatcher();
 
 private:
   QTimer timer;
