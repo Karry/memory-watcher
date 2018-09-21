@@ -28,13 +28,14 @@
 #include <QDateTime>
 #include <QtCore/QProcessEnvironment>
 #include <QtCore/QFileInfo>
+#include <StatM.h>
 
 class MemoryWatcher : public QObject{
   Q_OBJECT
   Q_DISABLE_COPY(MemoryWatcher)
 
 signals:
-  void snapshot(QDateTime time, QList<SmapsRange> ranges);
+  void snapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
 
 public slots:
   void init();
@@ -42,15 +43,20 @@ public slots:
 
 public:
   MemoryWatcher(QThread *thread, long pid, long period,
-               QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+                QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
 
   ~MemoryWatcher();
+
+private:
+  bool readSmaps(QList<SmapsRange> &ranges);
+  bool readStatM(StatM &statm);
 
 private:
   QTimer timer;
   QThread *thread;
   long period;
   QFileInfo smapsFile;
+  QFileInfo statmFile;
   QString lastLineStart;
 };
 

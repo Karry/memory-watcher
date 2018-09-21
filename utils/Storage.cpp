@@ -72,6 +72,15 @@ bool Storage::updateSchema()
     sql.append(",").append( "`time` datetime NOT NULL");
     sql.append(",").append( "`rss_sum` INTEGER NOT NULL ");
     sql.append(",").append( "`pss_sum` INTEGER NOT NULL ");
+
+    sql.append(",").append( "`statm_size` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_resident` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_shared` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_text` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_lib` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_data` INTEGER NOT NULL ");
+    sql.append(",").append( "`statm_dt` INTEGER NOT NULL ");
+
     sql.append(");");
 
     QSqlQuery q = db.exec(sql);
@@ -156,15 +165,31 @@ qlonglong Storage::insertRange(qlonglong from, qlonglong to, QString permission,
   return varToLong(sql.lastInsertId());
 }
 
-qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss)
+qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss, const StatM &statm)
 {
+
+
   QSqlQuery sql(db);
-  sql.prepare("INSERT INTO `measurement` (`time`, `rss_sum`, `pss_sum`) VALUES (:time, :rss, :pss)");
+  sql.prepare("INSERT INTO `measurement` ("
+              "  `time`, `rss_sum`, `pss_sum`,"
+              "  `statm_size`, `statm_resident`, `statm_shared`, `statm_text`, `statm_lib`, `statm_data`, `statm_dt` "
+              ") VALUES ("
+              "  :time, :rss, :pss, "
+              "  :statm_size, :statm_resident, :statm_shared, :statm_text, :statm_lib, :statm_data, :statm_dt"
+              ")");
   db.transaction();
 
   sql.bindValue(":time", time);
   sql.bindValue(":rss", rss);
   sql.bindValue(":pss", pss);
+
+  sql.bindValue(":statm_size", (qlonglong)statm.size);
+  sql.bindValue(":statm_resident", (qlonglong)statm.resident);
+  sql.bindValue(":statm_shared", (qlonglong)statm.shared);
+  sql.bindValue(":statm_text", (qlonglong)statm.text);
+  sql.bindValue(":statm_lib", (qlonglong)statm.lib);
+  sql.bindValue(":statm_data", (qlonglong)statm.data);
+  sql.bindValue(":statm_dt", (qlonglong)statm.dt);
 
   sql.exec();
   if (sql.lastError().isValid()) {

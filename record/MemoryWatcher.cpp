@@ -18,16 +18,20 @@
 */
 
 #include "MemoryWatcher.h"
+#include <StatM.h>
+#include <Utils.h>
 
 #include <QDebug>
 #include <QtCore/QFileInfo>
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
+
 MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, QString procFs):
   thread(thread),
   period(period),
-  smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid))
+  smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
+  statmFile(QString("%1/%2/statm").arg(procFs).arg(pid))
 {
   timer.moveToThread(thread);
 }
@@ -70,25 +74,57 @@ void parseRange(SmapsRange &range, const QString &line)
   range.pss = 0;
 }
 
-void MemoryWatcher::update()
+bool MemoryWatcher::readStatM(StatM &statm)
 {
-  if (thread != QThread::currentThread()) {
-    qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
+  QFile inputFile(statmFile.absoluteFilePath());
+  if (!inputFile.open(QIODevice::ReadOnly)) {
+    qWarning() << "Can't open file" << statmFile.absoluteFilePath();
+    return false;
+  }
+  QTextStream in(&inputFile);
+
+  QString line = in.readLine();
+  if (line.isEmpty()){
+    qWarning() << "Can't parse" << statmFile.absoluteFilePath();
+    return false;
   }
 
-  if (!smapsFile.exists()){
-    qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
-    return;
+  QStringList arr = line.split(" ", QString::SkipEmptyParts);
+  if (arr.size() < 7){
+    qWarning() << "Can't parse" << statmFile.absoluteFilePath();
+    return false;
+  }
+  QVector<size_t> arri;
+  arri.reserve(arr.size());
+  for (const auto &numStr:arr){
+    bool ok;
+    arri.push_back(numStr.toULongLong(&ok) * PageSizeKiB);
+    if (!ok){
+      qWarning() << "Can't parse" << statmFile.absoluteFilePath();
+      return false;
+    }
   }
 
+  statm.size = arri[0];
+  statm.resident = arri[1];
+  statm.shared = arri[2];
+  statm.text = arri[3];
+  statm.lib = arri[4];
+  statm.data = arri[5];
+  statm.dt = arri[6];
+
+  return true;
+}
+
+bool MemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
+{
   QFile inputFile(smapsFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
     qWarning() << "Can't open file" << smapsFile.absoluteFilePath();
-    return;
+    return false;
   }
   QTextStream in(&inputFile);
   bool rangeLine = true;
-  QList<SmapsRange> ranges;
   SmapsRange range;
   for (QString line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
     if (rangeLine) {
@@ -108,8 +144,31 @@ void MemoryWatcher::update()
     }
   }
   inputFile.close();
+  return true;
+}
 
-  emit snapshot(QDateTime::currentDateTime(), ranges);
+void MemoryWatcher::update()
+{
+  if (thread != QThread::currentThread()) {
+    qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
+  }
+
+  if (!smapsFile.exists()){
+    qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
+    return;
+  }
+
+  QList<SmapsRange> ranges;
+  if (!readSmaps(ranges)){
+    return;
+  }
+
+  StatM statm;
+  if (!readStatM(statm)){
+    return;
+  }
+
+  emit snapshot(QDateTime::currentDateTime(), ranges, statm);
 }
 
 void MemoryWatcher::init()

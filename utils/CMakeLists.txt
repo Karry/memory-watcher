@@ -4,7 +4,7 @@ set(HEADER_FILES
     ThreadPool.h
     Storage.h
     QVariantConverters.h
-    SmapsRange.h)
+    SmapsRange.h StatM.h)
 
 set(SOURCE_FILES
     Utils.cpp

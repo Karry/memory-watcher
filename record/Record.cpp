@@ -43,6 +43,8 @@ Record::Record(long pid, long period):
   watcher(new MemoryWatcher(watcherThread, pid, period)),
   feeder(new Feeder())
 {
+  qRegisterMetaType<StatM>();
+
   connect(&threadPool, SIGNAL(closed()), this, SLOT(deleteLater()));
 
   // init watcher
@@ -56,8 +58,8 @@ Record::Record(long pid, long period):
     return;
   }
 
-  connect(watcher, SIGNAL(snapshot(QDateTime, QList<SmapsRange>)),
-          feeder, SLOT(onSnapshot(QDateTime, QList<SmapsRange>)),
+  connect(watcher, SIGNAL(snapshot(QDateTime, QList<SmapsRange>, StatM)),
+          feeder, SLOT(onSnapshot(QDateTime, QList<SmapsRange>, StatM)),
           Qt::QueuedConnection);
 
   // for debug

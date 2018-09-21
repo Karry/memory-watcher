@@ -38,7 +38,7 @@ Feeder::~Feeder()
 {
 }
 
-void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges)
+void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm)
 {
   QMap<RangeKey, qlonglong> currentRanges;
 
@@ -70,7 +70,7 @@ void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges)
     pssSum += r.pss;
     measurements.push_back(m);
   }
-  qlonglong measurementId = storage.insertMeasurement(time, rssSum, pssSum);
+  qlonglong measurementId = storage.insertMeasurement(time, rssSum, pssSum, statm);
   storage.insertData(measurementId, measurements);
   if (!storage.commit()){
     qWarning() << "Failed to commit measurement";

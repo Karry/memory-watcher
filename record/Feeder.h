@@ -43,7 +43,7 @@ class Feeder : public QObject{
 
 signals:
 public slots:
-  void onSnapshot(QDateTime time, QList<SmapsRange> ranges);
+  void onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
 
 public:
   Feeder();

@@ -21,6 +21,7 @@
 #ifndef MEMORY_WATCHER_STORAGE_H
 #define MEMORY_WATCHER_STORAGE_H
 
+#include "StatM.h"
 
 #include <QtCore/QObject>
 #include <QSqlDatabase>
@@ -70,7 +71,7 @@ public:
   bool init(QString file);
 
   qlonglong insertRange(qlonglong from, qlonglong to, QString permission, QString name);
-  qlonglong insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss);
+  qlonglong insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss, const StatM &statm);
   bool insertData(qlonglong measurementId, const std::vector<MeasurementData> &measurements);
 
   bool insertData(const std::vector<MeasurementData> &measurements);

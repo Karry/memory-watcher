@@ -28,6 +28,8 @@
 #include <functional>
 #include <unordered_map>
 
+constexpr size_t PageSizeKiB = 4;
+
 struct Mapping
 {
   std::string name;
