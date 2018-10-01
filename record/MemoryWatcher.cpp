@@ -41,7 +41,7 @@ MemoryWatcher::~MemoryWatcher()
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
   }
-  qDebug() << "MemoryWatcherr";
+  qDebug() << "MemoryWatcher";
   timer.stop();
   thread->quit();
 }
