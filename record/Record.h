@@ -36,7 +36,7 @@ public slots:
   void close();
 
 public:
-  Record(long pid, long period);
+  Record(long pid, long period, QString databaseFile);
   ~Record();
 
 private:

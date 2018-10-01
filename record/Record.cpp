@@ -38,7 +38,7 @@ void Record::close()
   threadPool.close();
 }
 
-Record::Record(long pid, long period):
+Record::Record(long pid, long period, QString databaseFile):
   watcherThread(threadPool.makeThread("watcher")),
   watcher(new MemoryWatcher(watcherThread, pid, period)),
   feeder(new Feeder())
@@ -53,7 +53,7 @@ Record::Record(long pid, long period):
                    watcher, SLOT(init()));
   watcherThread->start();
 
-  if (!feeder->init(QString("measurement.%1.db").arg(pid))){
+  if (!feeder->init(databaseFile)){
     close();
     return;
   }
@@ -81,7 +81,10 @@ int main(int argc, char* argv[]) {
 
   if (app.arguments().size() < 2){
     std::cerr << "Usage:" << std::endl;
-    std::cerr << app.applicationName().toStdString() << " PID [period-ms]" << std::endl;
+    std::cerr << app.applicationName().toStdString() << " PID [period-ms] [database-file]" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "  default period is 1 second" << std::endl;
+    std::cerr << "  default database file is measurement.${PID}.db" << std::endl;
     return 1;
   }
 
@@ -91,7 +94,15 @@ int main(int argc, char* argv[]) {
     period = app.arguments()[2].toLong();
   }
 
-  Record *record = new Record(pid, period);
+  QString databaseFile;
+  if (app.arguments().size() >= 4){
+    databaseFile = app.arguments()[3];
+  }
+  if (databaseFile.isEmpty()) {
+    databaseFile = QString("measurement.%1.db").arg(pid);
+  }
+
+  Record *record = new Record(pid, period, databaseFile);
   std::function<void(int)> signalCallback = [&](int){ record->close(); };
   Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
                           &signalCallback);
