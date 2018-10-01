@@ -45,7 +45,7 @@ public:
   void close();
 
 private:
-  std::atomic_int liveBackgroundThreads;
+  std::atomic_int liveBackgroundThreads{0};
   int closeTimeout{0};
   QTimer closeCheck;
 };
