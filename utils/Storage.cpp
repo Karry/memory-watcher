@@ -262,6 +262,14 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   measurement.id = varToLong(measurementQuery.value("id"));
   measurement.time = varToDateTime(measurementQuery.value("time"));
 
+  measurement.statm.size = varToLong(measurementQuery.value("statm_size"));
+  measurement.statm.resident = varToLong(measurementQuery.value("statm_resident"));
+  measurement.statm.shared = varToLong(measurementQuery.value("statm_shared"));
+  measurement.statm.text = varToLong(measurementQuery.value("statm_text"));
+  measurement.statm.lib = varToLong(measurementQuery.value("statm_lib"));
+  measurement.statm.data = varToLong(measurementQuery.value("statm_data"));
+  measurement.statm.dt = varToLong(measurementQuery.value("statm_dt"));
+
   QSqlQuery sql(db);
 
   // ranges
@@ -308,6 +316,8 @@ bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type, qint64 fr
   // measurement
   if (type == Rss) {
     sql.prepare("SELECT * FROM `measurement` WHERE rss_sum = (SELECT MAX(rss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
+  }else if (type == StatmRss){
+    sql.prepare("SELECT * FROM `measurement` WHERE statm_resident = (SELECT MAX(statm_resident) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
   }else{
     sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
   }

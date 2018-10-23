@@ -158,7 +158,11 @@ std::vector<Mapping> MeasurementGroups::sortedMappings() const
 void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 {
   MeasurementGroups g;
-  group(g, measurement, type);
+  MemoryType smapsType = type;
+  if (type == StatmRss){
+    smapsType = Rss;
+  }
+  group(g, measurement, smapsType);
 
   constexpr int indent = 43;
 
@@ -171,6 +175,17 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 #endif
 
   std::cout << std::endl;
+  std::cout << "# statm data" << std::endl;
+  std::cout << "size:             " << align(measurement.statm.size, indent) << " Ki   // total program size" << std::endl;
+  std::cout << "resident:         " << align(measurement.statm.resident, indent) << " Ki   // (same as VmSize in /proc/[pid]/status)" << std::endl;
+  std::cout << "shared:           " << align(measurement.statm.shared, indent) << " Ki   // resident set size" << std::endl;
+  std::cout << "text:             " << align(measurement.statm.text, indent) << " Ki   // (same as VmRSS in /proc/[pid]/status)" << std::endl;
+  std::cout << "lib:              " << align(measurement.statm.lib, indent) << " Ki   // number of resident shared pages (i.e., backed by a file)" << std::endl;
+  std::cout << "data:             " << align(measurement.statm.data, indent) << " Ki   // (same as RssFile+RssShmem in /proc/[pid]/status)" << std::endl;
+  std::cout << "dt:               " << align(measurement.statm.dt, indent) << " Ki   // text (code)" << std::endl;
+
+  std::cout << std::endl;
+  std::cout << "# smaps data (" << (smapsType == Rss ? "Rss" : "Pss") << ")" << std::endl;
   std::cout << "thread stacks:    " << align(g.threadStacks, indent) << " Ki" << std::endl;
   std::cout << "heap:             " << align(g.heap, indent) << " Ki" << std::endl;
   std::cout << "anonymous:        " << align(g.anonymous, indent) << " Ki" << std::endl;

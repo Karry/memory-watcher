@@ -30,8 +30,8 @@
 #include <unordered_map>
 #include <signal.h>
 
-Peak::Peak(const QString &db):
-  db(db)
+Peak::Peak(const QString &db, MemoryType type):
+  db(db), type(type)
 {}
 
 Peak::~Peak()
@@ -51,7 +51,7 @@ void Peak::run()
     deleteLater();
     return;
   }
-  MemoryType type = Rss;
+
   Measurement measurement;
   if (!storage.getMemoryPeak(measurement, type)){
     qWarning() << "Failed to read memory peak";
@@ -66,12 +66,28 @@ void Peak::run()
   deleteLater();
 }
 
+QMap<QString, MemoryType> memoryTypes{
+  {"rss", MemoryType::Rss},
+  {"pss", MemoryType::Pss},
+  {"statm", MemoryType::StatmRss},
+};
+
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
 
   QString db = app.arguments().size() > 1 ? app.arguments()[1] : "measurement.db";
 
-  Peak *peak = new Peak(db);
+  MemoryType type{Rss};
+  if (app.arguments().size() > 2){
+    QString typeStr = app.arguments()[2];
+    if (!memoryTypes.contains(typeStr)){
+      qWarning() << "Dont understand to memory type" << typeStr;
+      return 1;
+    }
+    type = memoryTypes[typeStr];
+  }
+
+  Peak *peak = new Peak(db, type);
   QMetaObject::invokeMethod(peak, "run", Qt::QueuedConnection);
 
   int result = app.exec();

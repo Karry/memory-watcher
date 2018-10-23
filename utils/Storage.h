@@ -48,13 +48,17 @@ class Measurement {
 public:
   qlonglong id{0};
   QDateTime time;
+  StatM statm;
   QMap<qlonglong, Range> rangeMap;
   QList<MeasurementData> data;
 };
 
 enum MemoryType {
+  // SMaps
   Rss,
-  Pss
+  Pss,
+  // statm
+  StatmRss
 };
 
 class Storage : public QObject {

@@ -35,12 +35,13 @@ public slots:
   void run();
 
 public:
-  Peak(const QString &db);
+  Peak(const QString &db, MemoryType type);
   ~Peak();
 
 private:
   Storage storage;
   QString db;
+  MemoryType type{Rss};
 };
 
 
