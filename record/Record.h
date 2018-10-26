@@ -28,6 +28,8 @@
 #include <QObject>
 #include <QThread>
 
+#include <atomic>
+
 class Record : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Record)
@@ -42,6 +44,7 @@ public:
 private:
   ThreadPool threadPool;
   QThread *watcherThread;
+  std::atomic_int queueSize{0};
   MemoryWatcher *watcher;
   Feeder *feeder;
 

@@ -40,8 +40,8 @@ void Record::close()
 
 Record::Record(long pid, long period, QString databaseFile):
   watcherThread(threadPool.makeThread("watcher")),
-  watcher(new MemoryWatcher(watcherThread, pid, period)),
-  feeder(new Feeder())
+  watcher(new MemoryWatcher(watcherThread, pid, period, queueSize)),
+  feeder(new Feeder(queueSize))
 {
   qRegisterMetaType<StatM>();
 

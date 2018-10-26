@@ -26,12 +26,12 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-
-MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, QString procFs):
+MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, std::atomic_int &queueSize, QString procFs):
   thread(thread),
   period(period),
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
-  statmFile(QString("%1/%2/statm").arg(procFs).arg(pid))
+  statmFile(QString("%1/%2/statm").arg(procFs).arg(pid)),
+  queueSize(queueSize)
 {
   timer.moveToThread(thread);
 }
@@ -158,6 +158,11 @@ void MemoryWatcher::update()
     return;
   }
 
+  if (queueSize > 10){
+    qWarning() << "Full Queue" << queueSize;
+    return;
+  }
+
   QList<SmapsRange> ranges;
   if (!readSmaps(ranges)){
     return;
@@ -168,6 +173,7 @@ void MemoryWatcher::update()
     return;
   }
 
+  queueSize++;
   emit snapshot(QDateTime::currentDateTime(), ranges, statm);
 }
 

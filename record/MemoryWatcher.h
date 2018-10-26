@@ -30,6 +30,8 @@
 #include <QtCore/QFileInfo>
 #include <StatM.h>
 
+#include <atomic>
+
 class MemoryWatcher : public QObject{
   Q_OBJECT
   Q_DISABLE_COPY(MemoryWatcher)
@@ -42,7 +44,10 @@ public slots:
   void update();
 
 public:
-  MemoryWatcher(QThread *thread, long pid, long period,
+  MemoryWatcher(QThread *thread,
+                long pid,
+                long period,
+                std::atomic_int &queueSize,
                 QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
 
   ~MemoryWatcher();
@@ -58,6 +63,7 @@ private:
   QFileInfo smapsFile;
   QFileInfo statmFile;
   QString lastLineStart;
+  std::atomic_int &queueSize; // not owning reference
 };
 
 

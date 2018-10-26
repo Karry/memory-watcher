@@ -30,7 +30,8 @@ bool operator<(const RangeKey& a, const RangeKey& b)
   return a.permission < b.permission;
 }
 
-Feeder::Feeder()
+Feeder::Feeder(std::atomic_int &queueSize):
+  queueSize(queueSize)
 {
 }
 
@@ -41,6 +42,7 @@ Feeder::~Feeder()
 void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm)
 {
   QMap<RangeKey, qlonglong> currentRanges;
+  queueSize--;
 
   storage.transaction();
 

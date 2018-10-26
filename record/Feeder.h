@@ -25,8 +25,9 @@
 #include <Storage.h>
 
 #include <QObject>
-
 #include <QMap>
+
+#include <atomic>
 
 class RangeKey {
 public:
@@ -46,12 +47,13 @@ public slots:
   void onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
 
 public:
-  Feeder();
+  Feeder(std::atomic_int &queueSize);
   ~Feeder();
 
   bool init(QString file);
 
 private:
+  std::atomic_int &queueSize; // not owning reference
   Storage storage;
   QMap<RangeKey, qlonglong> lastRanges;
 };
