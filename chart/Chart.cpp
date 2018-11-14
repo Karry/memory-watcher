@@ -39,6 +39,14 @@
 
 using namespace QtCharts;
 
+namespace {
+constexpr int ThreadStacks = 0;
+constexpr int Anonymous = 1;
+constexpr int Heap = 2;
+constexpr int Sockets = 3;
+constexpr int OtherMappings = 4;
+}
+
 Chart::Chart(const QString &db):
   db(db)
 {
@@ -104,14 +112,19 @@ void Chart::run()
   time.restart();
 
   std::vector<QAreaSeries*> chartSeries;
-  for (int i = 0; i < 5; i++) {
+
+  QLineSeries *statmRss = new QLineSeries();
+  statmRss->setPen(QPen(Qt::red, 4));
+  statmRss->setName("StatM RSS");
+
+  for (int i = ThreadStacks; i <= OtherMappings; i++) {
     chartSeries.push_back(new QAreaSeries(new QLineSeries(), new QLineSeries()));
   }
-  chartSeries[0]->setName("thread stacks");
-  chartSeries[1]->setName("anonymous");
-  chartSeries[2]->setName("heap");
-  chartSeries[3]->setName("sockets");
-  chartSeries[4]->setName("other mappings");
+  chartSeries[ThreadStacks]->setName("thread stacks");
+  chartSeries[Anonymous]->setName("anonymous");
+  chartSeries[Heap]->setName("heap");
+  chartSeries[Sockets]->setName("sockets");
+  chartSeries[OtherMappings]->setName("other mappings");
 
   int significantMappingCnt = 20;
   std::vector<std::string> significantMappings;
@@ -132,21 +145,24 @@ void Chart::run()
   for (qint64 step = 0; step < pointCount; step ++){
     size_t seriesOffset = 0;
     const MeasurementGroups &measurement = measurements[step];
-    chartSeries[0]->lowerSeries()->append(step, seriesOffset);
+
+    statmRss->append(step, measurement.statm.resident);
+
+    chartSeries[ThreadStacks]->lowerSeries()->append(step, seriesOffset);
     seriesOffset += measurement.threadStacks;
-    chartSeries[0]->upperSeries()->append(step, seriesOffset);
+    chartSeries[ThreadStacks]->upperSeries()->append(step, seriesOffset);
 
-    chartSeries[1]->lowerSeries()->append(step, seriesOffset);
+    chartSeries[Anonymous]->lowerSeries()->append(step, seriesOffset);
     seriesOffset += measurement.anonymous;
-    chartSeries[1]->upperSeries()->append(step, seriesOffset);
+    chartSeries[Anonymous]->upperSeries()->append(step, seriesOffset);
 
-    chartSeries[2]->lowerSeries()->append(step, seriesOffset);
+    chartSeries[Heap]->lowerSeries()->append(step, seriesOffset);
     seriesOffset += measurement.heap;
-    chartSeries[2]->upperSeries()->append(step, seriesOffset);
+    chartSeries[Heap]->upperSeries()->append(step, seriesOffset);
 
-    chartSeries[3]->lowerSeries()->append(step, seriesOffset);
+    chartSeries[Sockets]->lowerSeries()->append(step, seriesOffset);
     seriesOffset += measurement.sockets;
-    chartSeries[3]->upperSeries()->append(step, seriesOffset);
+    chartSeries[Sockets]->upperSeries()->append(step, seriesOffset);
 
     size_t otherMappings = 0;
     for (const auto &mapping: measurement.mappings){
@@ -154,11 +170,11 @@ void Chart::run()
         otherMappings += mapping.second;
       }
     }
-    chartSeries[4]->lowerSeries()->append(step, seriesOffset);
+    chartSeries[OtherMappings]->lowerSeries()->append(step, seriesOffset);
     seriesOffset += otherMappings;
-    chartSeries[4]->upperSeries()->append(step, seriesOffset);
+    chartSeries[OtherMappings]->upperSeries()->append(step, seriesOffset);
 
-    int i = 5;
+    int i = OtherMappings +1;
     for (const auto &name: significantMappings){
       chartSeries[i]->lowerSeries()->append(step, seriesOffset);
       const auto &it = measurement.mappings.find(name);
@@ -173,6 +189,9 @@ void Chart::run()
     chart->addSeries(series);
     series->setPen(QPen(series->brush().color(), 0.0));
   }
+
+  chart->addSeries(statmRss);
+
   qDebug() << "prepare series: " << time.elapsed() << "ms";
 
   //chart->setAnimationOptions(QChart::AllAnimations);

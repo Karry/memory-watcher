@@ -107,6 +107,7 @@ void Utils::group(MeasurementGroups &g, const Measurement &measurement, MemoryTy
   g.heap = 0;
   g.sum = 0;
   g.mappings.clear();
+  g.statm = measurement.statm;
 
   Range lastMapping;
   for (const auto &d: measurement.data){

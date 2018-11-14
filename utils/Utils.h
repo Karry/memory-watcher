@@ -47,6 +47,8 @@ public:
   size_t sockets{0};
   size_t sum{0};
 
+  StatM statm;
+
   std::unordered_map<std::string, size_t> mappings;
 };
 
