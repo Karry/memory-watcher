@@ -76,7 +76,7 @@ void Chart::run()
 
   qint64 measurementFrom = 0;
   qint64 measurementTo = storage.measurementCount();
-  qint64 pointCount = std::min((qint64)1024, measurementTo - measurementFrom);
+  qint64 pointCount = std::min((qint64)1000000, measurementTo - measurementFrom);
 
   if (pointCount == 0){
     qWarning() << "No measurements" << db;
