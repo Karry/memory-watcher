@@ -177,13 +177,29 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
 
   std::cout << std::endl;
   std::cout << "# statm data" << std::endl;
-  std::cout << "size:             " << align(measurement.statm.size, indent) << " Ki   // total program size" << std::endl;
-  std::cout << "resident:         " << align(measurement.statm.resident, indent) << " Ki   // (same as VmSize in /proc/[pid]/status)" << std::endl;
-  std::cout << "shared:           " << align(measurement.statm.shared, indent) << " Ki   // resident set size" << std::endl;
-  std::cout << "text:             " << align(measurement.statm.text, indent) << " Ki   // (same as VmRSS in /proc/[pid]/status)" << std::endl;
-  std::cout << "lib:              " << align(measurement.statm.lib, indent) << " Ki   // number of resident shared pages (i.e., backed by a file)" << std::endl;
-  std::cout << "data:             " << align(measurement.statm.data, indent) << " Ki   // (same as RssFile+RssShmem in /proc/[pid]/status)" << std::endl;
-  std::cout << "dt:               " << align(measurement.statm.dt, indent) << " Ki   // text (code)" << std::endl;
+  std::cout << "size:             " << align(measurement.statm.size, indent) << " Ki"
+            << "   // total program size "
+            << "(same as VmSize in /proc/[pid]/status)" << std::endl;
+
+  std::cout << "resident:         " << align(measurement.statm.resident, indent) << " Ki"
+            << "   // resident set size "
+            << "(same as VmRSS in /proc/[pid]/status)" << std::endl;
+
+  std::cout << "shared:           " << align(measurement.statm.shared, indent) << " Ki"
+            << "   // number of resident shared pages (i.e., backed by a file) "
+            << "(same as RssFile+RssShmem in /proc/[pid]/status)" << std::endl;
+
+  std::cout << "text:             " << align(measurement.statm.text, indent) << " Ki"
+            << "   // text (code)" << std::endl;
+
+  std::cout << "lib:              " << align(measurement.statm.lib, indent) << " Ki"
+            << "   // library (unused since Linux 2.6; always 0)" << std::endl;
+
+  std::cout << "data:             " << align(measurement.statm.data, indent) << " Ki"
+            << "   // data + stack" << std::endl;
+
+  std::cout << "dt:               " << align(measurement.statm.dt, indent) << " Ki"
+            << "   // dirty pages (unused since Linux 2.6; always 0)" << std::endl;
 
   std::cout << std::endl;
   std::cout << "# smaps data (" << (smapsType == Rss ? "Rss" : "Pss") << ")" << std::endl;
