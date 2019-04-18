@@ -26,6 +26,7 @@ set(CMAKE_AUTORCC ON)
 
 add_subdirectory(utils)
 add_subdirectory(record)
+add_subdirectory(load)
 add_subdirectory(peak)
 add_subdirectory(replay)
 
