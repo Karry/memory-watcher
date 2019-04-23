@@ -210,7 +210,7 @@ void MemoryWatcher::init()
   lastLineStart = arr[0];
   qDebug() << "lastLineStart:" << lastLineStart;
 
-  connect(&timer, SIGNAL(timeout()), this, SLOT(update()));
+  connect(&timer, &QTimer::timeout, this, &MemoryWatcher::update);
 
   timer.start();
 }

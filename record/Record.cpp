@@ -45,12 +45,12 @@ Record::Record(long pid, long period, QString databaseFile):
 {
   qRegisterMetaType<StatM>();
 
-  connect(&threadPool, SIGNAL(closed()), this, SLOT(deleteLater()));
+  connect(&threadPool, &ThreadPool::closed, this, &Record::deleteLater);
 
   // init watcher
   watcher->moveToThread(watcherThread);
-  QObject::connect(watcherThread, SIGNAL(started()),
-                   watcher, SLOT(init()));
+  QObject::connect(watcherThread, &QThread::started,
+                   watcher, &MemoryWatcher::init);
   watcherThread->start();
 
   if (!feeder->init(databaseFile)){
@@ -58,8 +58,8 @@ Record::Record(long pid, long period, QString databaseFile):
     return;
   }
 
-  connect(watcher, SIGNAL(snapshot(QDateTime, QList<SmapsRange>, StatM)),
-          feeder, SLOT(onSnapshot(QDateTime, QList<SmapsRange>, StatM)),
+  connect(watcher, &MemoryWatcher::snapshot,
+          feeder, &Feeder::onSnapshot,
           Qt::QueuedConnection);
 
   // for debug

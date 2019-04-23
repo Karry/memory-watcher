@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
   QMetaObject::invokeMethod(peak, "run", Qt::QueuedConnection);
 
   app.setQuitOnLastWindowClosed(false);
-  QObject::connect(&app, SIGNAL(lastWindowClosed()), peak, SLOT(deleteLater()));
+  QObject::connect(&app, &QApplication::lastWindowClosed, peak, &Chart::deleteLater);
 
   int result = app.exec();
   qDebug() << "Main loop ended...";

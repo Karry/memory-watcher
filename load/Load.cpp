@@ -49,8 +49,8 @@ Load::Load(long pid, const QString &smapsFile, const QString &databaseFile):
 
   // init watcher
   loader->moveToThread(loaderThread);
-  QObject::connect(loaderThread, SIGNAL(started()),
-                   loader, SLOT(init()));
+  QObject::connect(loaderThread, &QThread::started,
+                   loader, &MemoryLoader::init);
 
   if (!feeder->init(databaseFile)){
     close();

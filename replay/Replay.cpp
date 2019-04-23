@@ -64,7 +64,7 @@ void Replay::run()
 
   timer.setSingleShot(false);
   timer.setInterval(interval);
-  connect(&timer, SIGNAL(timeout()), this, SLOT(step()));
+  connect(&timer, &QTimer::timeout, this, &Replay::step);
   timer.start();
 }
 

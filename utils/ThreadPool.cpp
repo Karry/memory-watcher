@@ -47,7 +47,7 @@ void ThreadPool::checkClosed()
 void ThreadPool::close()
 {
   closeTimeout = 0;
-  connect(&closeCheck, SIGNAL(timeout()), this, SLOT(checkClosed()));
+  connect(&closeCheck, &QTimer::timeout, this, &ThreadPool::checkClosed);
   closeCheck.setInterval(100);
   closeCheck.setSingleShot(false);
   closeCheck.start();
@@ -58,11 +58,11 @@ QThread *ThreadPool::makeThread(QString name)
 {
   QThread *thread=new QThread();
   thread->setObjectName(name);
-  QObject::connect(thread, SIGNAL(finished()),
-                   thread, SLOT(deleteLater()));
+  QObject::connect(thread, &QThread::finished,
+                   thread, &QThread::deleteLater);
 
-  connect(thread, SIGNAL(finished()),
-          this, SLOT(threadFinished()));
+  connect(thread, &QThread::finished,
+          this, &ThreadPool::threadFinished);
 
   liveBackgroundThreads++;
   qDebug() << "Create background thread" << thread;
