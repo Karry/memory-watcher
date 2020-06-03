@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
   qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
 
-  if (app.arguments().size() < 2){
+  if (app.arguments().size() < 2 || app.arguments()[1] == "--help" || app.arguments()[1] == "-h"){
     std::cerr << "Usage:" << std::endl;
     std::cerr << app.applicationName().toStdString() << " PID [period-ms] [database-file]" << std::endl;
     std::cerr << std::endl;
@@ -88,10 +88,19 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  long pid = app.arguments()[1].toLong();
+  bool ok;
+  long pid = app.arguments()[1].toLong(&ok);
+  if (!ok){
+    qCritical() << "Cannot parse PID" << app.arguments()[1];
+    return 2;
+  }
   long period = 1000;
   if (app.arguments().size() >= 3){
-    period = app.arguments()[2].toLong();
+    period = app.arguments()[2].toLong(&ok);
+    if (!ok){
+      qCritical() << "Cannot parse period" << app.arguments()[2];
+      return 2;
+    }
   }
 
   QString databaseFile;
