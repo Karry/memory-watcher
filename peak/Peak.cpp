@@ -75,11 +75,24 @@ QMap<QString, MemoryType> memoryTypes{
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
 
+  if (app.arguments().size() >= 2 && (app.arguments()[1] == "--help" || app.arguments()[1] == "-h")){
+    std::cerr << "Usage:" << std::endl;
+    std::cerr << app.applicationName().toStdString() << " [database-file] [memory-type]" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "  default database file is measurement.db" << std::endl;
+    std::cerr << "  default memory type is rss. Possibilities:";
+    for (const auto &memType : memoryTypes.keys()){
+      std::cerr << " " << memType.toStdString();
+    }
+    std::cerr << std::endl;
+    return 1;
+  }
+
   QString db = app.arguments().size() > 1 ? app.arguments()[1] : "measurement.db";
 
   MemoryType type{Rss};
   if (app.arguments().size() > 2){
-    QString typeStr = app.arguments()[2];
+    QString typeStr = app.arguments()[2].toLower();
     if (!memoryTypes.contains(typeStr)){
       qWarning() << "Dont understand to memory type" << typeStr;
       return 1;
