@@ -29,7 +29,7 @@ size_t SmapsRange::sizeBytes()
 
 void SmapsRange::debugPrint()
 {
-  qDebug() << QString().sprintf("%zx-%zx", from, to) << permission
+  qDebug() << QString::asprintf("%zx-%zx", from, to) << permission
            << name << rss << pss;
 }
 

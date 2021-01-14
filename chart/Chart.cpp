@@ -31,6 +31,7 @@
 #include <QAreaSeries>
 #include <QCategoryAxis>
 #include <QFileInfo>
+#include <QElapsedTimer>
 
 #include <iostream>
 #include <unordered_map>
@@ -93,7 +94,7 @@ void Chart::run()
   qint64 measurementCount = measurementTo - measurementFrom;
   qint64 stepSize = measurementCount / pointCount;
   std::vector<MeasurementGroups> measurements(pointCount);
-  QTime time;
+  QElapsedTimer time;
   time.start();
   MeasurementGroups peak;
   for (qint64 step = 0; step < pointCount; step ++){

@@ -71,10 +71,10 @@ void Utils::catchUnixSignals(std::initializer_list<int> quitSignals,
 QString printWithSeparator(size_t n)
 {
   if (n < 1000) {
-    return QString().sprintf("%d", (int)n);
+    return QString::asprintf("%d", (int)n);
   }
   return printWithSeparator(n / 1000) +
-         QString().sprintf(" %03d", (int)(n % 1000));
+         QString::asprintf(" %03d", (int)(n % 1000));
 }
 
 std::string align(size_t mem, int size = 9)
@@ -94,7 +94,7 @@ void Utils::printMeasurementSmapsLike(const Measurement &measurement)
     std::cout << "Size: " << align(r.to - r.from, 12) << " Ki " <<
              "Rss: " << align(d.rss) << " Ki " <<
              "Pss: " << align(d.pss) << " Ki : " <<
-             QString().sprintf("%zx-%zx", (size_t) r.from, (size_t) r.to).toStdString() << " "<<
+             QString::asprintf("%zx-%zx", (size_t) r.from, (size_t) r.to).toStdString() << " "<<
              r.permission.toStdString() << " " << r.name.toStdString() <<
              std::endl;
   }
