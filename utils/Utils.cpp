@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
+#include <QFileInfo>
 
 static std::function<void(int)> *signalHandler = nullptr;
 
@@ -109,7 +110,7 @@ void Utils::group(MeasurementGroups &g, const Measurement &measurement, MemoryTy
   g.mappings.clear();
   g.statm = measurement.statm;
 
-  Range lastMapping;
+  Range lastElfMapping;
   for (const auto &d: measurement.data){
     const Range &r = measurement.rangeMap[d.rangeId];
     size_t mem = type == Rss ? d.rss : d.pss;
@@ -126,16 +127,27 @@ void Utils::group(MeasurementGroups &g, const Measurement &measurement, MemoryTy
       g.heap += mem;
     } else if (r.name.isEmpty()) {
 
-      if (r.from == lastMapping.to && r.permission == "rw-p"){
+      if (r.from == lastElfMapping.to && r.permission == "rw-p"){
         // assume that this is .bss library area
-        auto stdName = lastMapping.name.toStdString();
+        auto stdName = lastElfMapping.name.toStdString();
         g.mappings[stdName] = g.mappings[stdName] + mem;
       }else {
         g.anonymous += mem;
       }
     } else {
       auto stdName = r.name.toStdString();
-      lastMapping = r;
+
+      if (r.permission=="r-xp") {
+        lastElfMapping = r; // .text library area
+      } else if ((r.permission == "r--p" || r.permission == "rw-p") &&
+                 r.name == lastElfMapping.name) {
+        // read-only data (constants) and data of library
+        lastElfMapping.to = r.to;
+      } else {
+        // memory mapped, non executable file
+        lastElfMapping = Range();
+      }
+
       g.mappings[stdName] = g.mappings[stdName] + mem;
     }
     g.sum += mem;
