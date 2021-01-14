@@ -2,15 +2,15 @@
 # Memory watcher
 
 Goal of this project is provide high level overview about memory consumption of Linux process 
-and provide its progress in time. These tools don't provide deep view to heap usage 
+and record its progress in time. These tools don't provide deep view to heap usage 
 like [Gperftools](https://github.com/gperftools/gperftools) or [Heaptrack](https://github.com/KDE/heaptrack), 
-but "outside" monitoring of complete **Rss**/**Pss** layout. Heap size may be just fraction of all
+but monitoring of complete **Rss**/**Pss** layout from "outside". Heap size may be just fraction of all
 used memory, especially when some library manage its memory by anonymous mappings (mmap) and don't use 
 libc allocator.
 
 ## How it works
 
-`memory-watcher` reads `/proc/<PID>/smaps` file periodically and store information about memory regions 
+`memory-record` reads `/proc/<PID>/smaps` file periodically and store information about memory regions 
 to SQLite database. This database may be read by custom scripts or provided tools...
 
 Note that Rss and Pss sizes obtained from `smaps` file may differ from Rss visible in `status`, 
@@ -35,8 +35,17 @@ it is possible to do it via sshfs (sftp-server is required on the remote device)
 
 ```bash
 mkdir proc
-sshfs -odirect_io  root@192.168.1.1:/proc `pwd`/proc
+sshfs -odirect_io  root@192.168.1.1:/proc $(pwd)/proc
 PROCFS=./proc memory-record remote-PID period-ms
+```
+
+### Load tool
+
+This tool allow to load exactly one sample of smaps to database.
+It may be useful with custom script.
+
+```bash
+memory-load-smaps PID smapsFile [database-file]
 ```
 
 ### Peak tool
@@ -77,3 +86,20 @@ other mappings:                                         7 700 Ki
 
 sum:                                                  740 980 Ki
 ```
+
+### Replay tool
+
+Experiment tool that replay all measurements in database.
+
+```bash
+memory-replay database.db
+```
+
+### Chart tool
+
+It shows you whole history in nice chart. Just be patient for loading :-) 
+
+<img alt="Memory progress chart"
+width="837" height="347"
+src="https://raw.githubusercontent.com/Avast/memory-watcher/master/examples/osmscout-chart.png" />
+
