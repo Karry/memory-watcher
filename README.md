@@ -50,10 +50,10 @@ memory-load-smaps PID smapsFile [database-file]
 
 ### Peak tool
 
-This tool select peak memory (Rss) usage in recording and prints summary.
+This tool select peak memory (Rss or Pss) usage in recording and prints summary.
 
 ```bash
-# ./memory-peak measurement.db
+# ./memory-peak measurement.db rss
 peak measurement: 481
 time:             2018-08-17T15:58:03.942
 
