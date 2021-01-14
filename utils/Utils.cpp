@@ -177,7 +177,7 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
   }
   group(g, measurement, smapsType);
 
-  constexpr int indent = 43;
+  constexpr int indent = 80;
 
   std::cout << "measurement:      " << measurement.id << std::endl;
 
@@ -224,7 +224,7 @@ void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
   std::cout << std::endl;
   for (const auto &m: g.sortedMappings()){
     if (i < 20){
-      std::cout << m.name << " " << align(m.size, 60 - m.name.size()) << " Ki" << std::endl;
+      std::cout << m.name << " " << align(m.size, indent+17 - m.name.size()) << " Ki" << std::endl;
     } else {
       other += m.size;
     }
