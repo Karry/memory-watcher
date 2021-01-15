@@ -92,12 +92,12 @@ void Utils::printMeasurementSmapsLike(const Measurement &measurement)
   for (const auto &d: measurement.data) {
     const Range &r = measurement.rangeMap[d.rangeId];
 
-    std::cout << "Size: " << align(r.to - r.from, 12) << " Ki " <<
-             "Rss: " << align(d.rss) << " Ki " <<
-             "Pss: " << align(d.pss) << " Ki : " <<
-             QString::asprintf("%zx-%zx", (size_t) r.from, (size_t) r.to).toStdString() << " "<<
-             r.permission.toStdString() << " " << r.name.toStdString() <<
-             std::endl;
+    std::cout << "Size: " << align((r.to - r.from) / 1024, 12) << " Ki "
+              << "Rss: " << align(d.rss) << " Ki "
+              << "Pss: " << align(d.pss) << " Ki : "
+              << QString::asprintf("%zx-%zx", (size_t) r.from, (size_t) r.to).toStdString() << " "
+              << r.permission.toStdString() << " " << r.name.toStdString()
+              << std::endl;
   }
 }
 
