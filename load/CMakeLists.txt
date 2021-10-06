@@ -11,6 +11,8 @@ set(SOURCE_FILES
 
 add_executable(memory-load-smaps ${SOURCE_FILES} ${HEADER_FILES})
 
+set_property(TARGET memory-load-smaps PROPERTY INTERPROCEDURAL_OPTIMIZATION ${MEMORY_WATCHER_ENABLE_IPO})
+
 target_include_directories(memory-load-smaps PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}
     )

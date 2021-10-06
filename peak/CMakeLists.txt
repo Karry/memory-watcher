@@ -8,6 +8,8 @@ set(SOURCE_FILES
 
 add_executable(memory-peak ${SOURCE_FILES} ${HEADER_FILES})
 
+set_property(TARGET memory-peak PROPERTY INTERPROCEDURAL_OPTIMIZATION ${MEMORY_WATCHER_ENABLE_IPO})
+
 target_include_directories(memory-peak PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}
     )

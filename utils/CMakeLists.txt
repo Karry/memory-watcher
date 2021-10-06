@@ -14,6 +14,8 @@ set(SOURCE_FILES
 
 add_library(memory-watcher-utils ${SOURCE_FILES} ${HEADER_FILES})
 
+set_property(TARGET memory-watcher-utils PROPERTY INTERPROCEDURAL_OPTIMIZATION ${MEMORY_WATCHER_ENABLE_IPO})
+
 target_include_directories(memory-watcher-utils PRIVATE
     )
 

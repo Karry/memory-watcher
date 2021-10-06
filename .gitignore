@@ -1,8 +1,7 @@
 /build*/
 /demo*/
 /.idea/
-/cmake-build-debug
-/cmake-build-release
+/cmake-build-*
 *.sublime-workspace
 .tags
 tags
