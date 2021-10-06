@@ -22,7 +22,7 @@ jobs:
       - name: Install memory watcher dependencies
         run:  "sudo apt-get update && sudo apt-get install -y
                qt5-default qttools5-dev-tools
-               qttools5-dev libqt5sql5-sqlite
+               qttools5-dev libqt5sql5-sqlite libqt5charts5-dev
                "
       - name: Configure build project
         run: cmake -B build -DCMAKE_UNITY_BUILD=ON -Wno-dev -G "Ninja"
