@@ -10,6 +10,14 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 add_definitions( -Wall -Wextra -pedantic -Wno-unused-function)
 add_definitions( -fno-omit-frame-pointer -fstack-protector-all -fPIC )
 
+# Do *NOT* turn assertions off in release and rel-with-deb-info modes.
+# CMakes does that by default despite any recent documentation
+# recommending against the practice.
+string( REPLACE "/DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+string( REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+string( REPLACE "/DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string( REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+
 set(QT_MIN_VERSION "5.2.0")
 find_package( Qt5 ${QT_MIN_VERSION} 
               REQUIRED NO_MODULE COMPONENTS 
