@@ -4,7 +4,7 @@ project(memory-watcher C CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # build should fail when compiler don't support standard defined by CMAKE_CXX_STANDARD
 
-add_definitions( -Wall -pedantic -fPIC -Wno-unused-function)
+add_definitions( -Wall -Wextra -pedantic -fPIC -Wno-unused-function)
 add_definitions(-std=c++11)
 
 set(QT_MIN_VERSION "5.2.0")

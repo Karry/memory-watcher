@@ -26,7 +26,7 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-MemoryLoader::MemoryLoader(QThread *thread, long pid, const QString &smapsFile):
+MemoryLoader::MemoryLoader(QThread *thread, [[maybe_unused]] long pid, const QString &smapsFile):
   thread(thread),
   smapsFile(smapsFile)
 {
