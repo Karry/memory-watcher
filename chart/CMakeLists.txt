@@ -6,7 +6,6 @@ set(SOURCE_FILES
     Chart.cpp)
 
 add_executable(memory-chart ${SOURCE_FILES} ${HEADER_FILES})
-set_property(TARGET memory-chart PROPERTY CXX_STANDARD 11)
 
 target_include_directories(memory-chart PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}

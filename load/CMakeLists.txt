@@ -10,7 +10,6 @@ set(SOURCE_FILES
     Feeder.cpp)
 
 add_executable(memory-load-smaps ${SOURCE_FILES} ${HEADER_FILES})
-set_property(TARGET memory-load-smaps PROPERTY CXX_STANDARD 11)
 
 target_include_directories(memory-load-smaps PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}

@@ -7,7 +7,6 @@ set(SOURCE_FILES
     Replay.cpp)
 
 add_executable(memory-replay ${SOURCE_FILES} ${HEADER_FILES})
-set_property(TARGET memory-replay PROPERTY CXX_STANDARD 11)
 
 target_include_directories(memory-replay PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}

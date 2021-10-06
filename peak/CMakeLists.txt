@@ -7,7 +7,6 @@ set(SOURCE_FILES
     Peak.cpp)
 
 add_executable(memory-peak ${SOURCE_FILES} ${HEADER_FILES})
-set_property(TARGET memory-peak PROPERTY CXX_STANDARD 11)
 
 target_include_directories(memory-peak PRIVATE
     ${WATCHER_UTILS_INCLUDE_DIR}

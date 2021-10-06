@@ -13,7 +13,6 @@ set(SOURCE_FILES
     SmapsRange.cpp)
 
 add_library(memory-watcher-utils ${SOURCE_FILES} ${HEADER_FILES})
-set_property(TARGET memory-watcher-utils PROPERTY CXX_STANDARD 11)
 
 target_include_directories(memory-watcher-utils PRIVATE
     )
