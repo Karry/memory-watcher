@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_SMAPSLOADER_H
-#define MEMORY_WATCHER_SMAPSLOADER_H
+#pragma once
 
 #include <SmapsRange.h>
 
@@ -60,6 +59,3 @@ private:
   QFileInfo smapsFile;
   QString lastLineStart;
 };
-
-
-#endif //MEMORY_WATCHER_SMAPSLOADER_H

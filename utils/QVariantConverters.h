@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef QVARIANTCONVERTERS_H
-#define QVARIANTCONVERTERS_H
+#pragma once
 
 #include <QVariant>
 #include <QDateTime>
@@ -77,5 +76,3 @@ inline double varToDouble(const QVariant &var, double def = 0)
 }
 
 }
-
-#endif //QVARIANTCONVERTERS_H

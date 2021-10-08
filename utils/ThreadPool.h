@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_THREADPOOL_H
-#define MEMORY_WATCHER_THREADPOOL_H
+#pragma once
 
 #include <QObject>
 #include <QThread>
@@ -49,6 +48,3 @@ private:
   int closeTimeout{0};
   QTimer closeCheck;
 };
-
-
-#endif //MEMORY_WATCHER_THREADPOOL_H

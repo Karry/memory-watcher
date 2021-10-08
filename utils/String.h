@@ -1,6 +1,3 @@
-#ifndef STRING_H
-#define STRING_H
-
 /*
   This source is part of the libosmscout library
   Copyright (C) 2009  Tim Teulings
@@ -19,6 +16,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 */
+
+#pragma once
 
 #include <limits>
 #include <list>
@@ -272,4 +271,3 @@ extern bool StringToNumber(const char* string, double& value);
  * \ingroup Util
  */
 extern bool StringToNumber(const std::string& string, double& value);
-#endif

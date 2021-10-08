@@ -17,9 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
-#ifndef MEMORY_WATCHER_STORAGE_H
-#define MEMORY_WATCHER_STORAGE_H
+#pragma once
 
 #include "StatM.h"
 
@@ -117,5 +115,3 @@ private:
   QSqlDatabase db;
 };
 
-
-#endif //MEMORY_WATCHER_STORAGE_H
