@@ -1,16 +1,21 @@
 
 set(HEADER_FILES
-    Utils.h
-    ThreadPool.h
-    Storage.h
+    CmdLineParsing.h
     QVariantConverters.h
-    SmapsRange.h StatM.h)
+    SmapsRange.h
+    StatM.h
+    Storage.h
+    String.h
+    ThreadPool.h
+    Utils.h)
 
 set(SOURCE_FILES
-    Utils.cpp
-    ThreadPool.cpp
+    CmdLineParsing.cpp
+    SmapsRange.cpp
     Storage.cpp
-    SmapsRange.cpp)
+    String.cpp
+    ThreadPool.cpp
+    Utils.cpp)
 
 add_library(memory-watcher-utils ${SOURCE_FILES} ${HEADER_FILES})
 
