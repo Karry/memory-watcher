@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_UTILS_H
-#define MEMORY_WATCHER_UTILS_H
+#pragma once
 
 #include "Storage.h"
 
@@ -65,6 +64,3 @@ public:
   static void printMeasurement(const Measurement &measurement, MemoryType type);
   static void clearScreen();
 };
-
-
-#endif //MEMORY_WATCHER_UTILS_H

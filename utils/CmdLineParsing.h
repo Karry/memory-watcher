@@ -1,6 +1,3 @@
-#ifndef CMDLINEPARSING_H
-#define CMDLINEPARSING_H
-
 /*
   This source is part of the libosmscout library
   Copyright (C) 2017  Tim Teulings
@@ -20,6 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 */
 
+#pragma once
 
 #include "String.h"
 
@@ -401,5 +399,3 @@ extern bool ParseUInt32Argument(int argc,
                                 int& currentIndex,
                                 uint32_t& value);
 
-
-#endif

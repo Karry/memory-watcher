@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_WATCHER_RECORD_H
-#define MEMORY_WATCHER_LOAD_H
+#pragma once
 
 #include "MemoryLoader.h"
 #include "Feeder.h"
@@ -50,5 +49,3 @@ private:
   //QTimer shutdownTimer;
 };
 
-
-#endif //MEMORY_WATCHER_RECORD_H

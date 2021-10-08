@@ -17,8 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MEMORY_LOADER_FEEDER_H
-#define MEMORY_LOADER_FEEDER_H
+#pragma once
 
 #include "MemoryLoader.h"
 
@@ -58,6 +57,3 @@ private:
   Storage storage;
   QMap<RangeKey, qlonglong> lastRanges;
 };
-
-
-#endif //MEMORY_LOADER_FEEDER_H

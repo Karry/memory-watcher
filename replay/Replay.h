@@ -16,10 +16,7 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
-
-#ifndef MEMORY_WATCHER_REPLAY_H
-#define MEMORY_WATCHER_REPLAY_H
+#pragma once
 
 #include <Storage.h>
 
@@ -54,6 +51,3 @@ private:
   int interval{20};
   int idStep{1};
 };
-
-
-#endif //MEMORY_WATCHER_REPLAY_H
