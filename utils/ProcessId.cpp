@@ -68,3 +68,42 @@ ProcessId::StartTime ProcessId::processStartTime(pid_t pid, const QString &procF
   return result;
 }
 
+
+#ifdef UNIT_TESTS
+
+#include <catch2/catch.hpp>
+
+#include <QFile>
+#include <QTextStream>
+#include <QFileInfo>
+#include <QRandomGenerator>
+
+TEST_CASE("/proc/<pid>/stat parsing test") {
+
+  quint32 rndVal = QRandomGenerator::global()->generate();
+  QDir procFs(QString("%1/proc-%2").arg(QDir::tempPath()).arg(rndVal));
+  qDebug() << "test proc fs:" << procFs.path();
+  QDir processDir(procFs.path() + "/1");
+  REQUIRE(processDir.mkpath(processDir.path()));
+  QFile stat(processDir.path() + "/stat");
+  REQUIRE(stat.open(QFile::WriteOnly));
+
+  {
+    QTextStream stream(&stat);
+
+    stream << "285465 (a(bc) .sh) S 8557 285465 8557 34820 285465 4194304 173 0 2 0 0 0 0 0 20 0 1 0 ";
+    stream << "9493934 12677120 851 18446744073709551615 94349822259200 94349822981893 140733215755776 ";
+    stream << "0 0 0 65536 4 65538 1 0 0 17 2 0 0 0 0 0 94349823212784 94349823260164 94349840445440 ";
+    stream << "140733215764627 140733215764649 140733215764649 140733215768556 0";
+    stream << "\n";
+  }
+
+  stat.close();
+
+  qDebug() << "test stat file:" << stat.fileName();
+  REQUIRE(ProcessId::processStartTime(1, procFs.path()) == 9493934);
+  REQUIRE(stat.remove());
+  REQUIRE(procFs.removeRecursively());
+}
+
+#endif // UNIT_TESTS
