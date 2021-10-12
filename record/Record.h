@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "MemoryWatcher.h"
+#include "ProcessMemoryWatcher.h"
 #include "Feeder.h"
 
 #include <ThreadPool.h>
@@ -37,14 +37,14 @@ public slots:
   void close();
 
 public:
-  Record(long pid, long period, QString databaseFile);
+  Record(QSet<long> pids, long period, QString databaseFile);
   ~Record();
 
 private:
   ThreadPool threadPool;
   QThread *watcherThread;
   std::atomic_int queueSize{0};
-  MemoryWatcher *watcher;
+  ProcessMemoryWatcher *watcher;
   Feeder *feeder;
 
   //QTimer shutdownTimer;

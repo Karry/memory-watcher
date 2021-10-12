@@ -39,7 +39,7 @@ Feeder::~Feeder()
 {
 }
 
-void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm)
+void Feeder::onProcessSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm)
 {
   QMap<RangeKey, qlonglong> currentRanges;
   queueSize--;

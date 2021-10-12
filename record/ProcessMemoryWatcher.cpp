@@ -17,7 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "MemoryWatcher.h"
+#include "ProcessMemoryWatcher.h"
 #include <StatM.h>
 #include <Utils.h>
 
@@ -26,7 +26,12 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, std::atomic_int &queueSize, QString procFs):
+ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
+                                           pid_t pid,
+                                           long period,
+                                           std::atomic_int &queueSize,
+                                           QString procFs):
+  processId(pid, procFs),
   thread(thread),
   period(period),
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
@@ -36,7 +41,7 @@ MemoryWatcher::MemoryWatcher(QThread *thread, long pid, long period, std::atomic
   timer.moveToThread(thread);
 }
 
-MemoryWatcher::~MemoryWatcher()
+ProcessMemoryWatcher::~ProcessMemoryWatcher()
 {
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
@@ -74,7 +79,7 @@ void parseRange(SmapsRange &range, const QString &line)
   range.pss = 0;
 }
 
-bool MemoryWatcher::readStatM(StatM &statm)
+bool ProcessMemoryWatcher::readStatM(StatM &statm)
 {
   QFile inputFile(statmFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
@@ -116,7 +121,7 @@ bool MemoryWatcher::readStatM(StatM &statm)
   return true;
 }
 
-bool MemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
+bool ProcessMemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
 {
   QFile inputFile(smapsFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
@@ -147,7 +152,7 @@ bool MemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
   return true;
 }
 
-void MemoryWatcher::update()
+void ProcessMemoryWatcher::update()
 {
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
@@ -177,7 +182,7 @@ void MemoryWatcher::update()
   emit snapshot(QDateTime::currentDateTime(), ranges, statm);
 }
 
-void MemoryWatcher::init()
+void ProcessMemoryWatcher::init()
 {
   timer.setSingleShot(false);
   timer.setInterval(period);
@@ -210,7 +215,7 @@ void MemoryWatcher::init()
   lastLineStart = arr[0];
   qDebug() << "lastLineStart:" << lastLineStart;
 
-  connect(&timer, &QTimer::timeout, this, &MemoryWatcher::update);
+  connect(&timer, &QTimer::timeout, this, &ProcessMemoryWatcher::update);
 
   timer.start();
 }

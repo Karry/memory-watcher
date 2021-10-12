@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <ProcessId.h>
 #include <SmapsRange.h>
 
 #include <QtCore/QObject>
@@ -27,13 +28,13 @@
 #include <QDateTime>
 #include <QtCore/QProcessEnvironment>
 #include <QtCore/QFileInfo>
-#include <StatM.h>
 
+#include <StatM.h>
 #include <atomic>
 
-class MemoryWatcher : public QObject{
+class ProcessMemoryWatcher : public QObject{
   Q_OBJECT
-  Q_DISABLE_COPY(MemoryWatcher)
+  Q_DISABLE_COPY(ProcessMemoryWatcher)
 
 signals:
   void snapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
@@ -43,19 +44,20 @@ public slots:
   void update();
 
 public:
-  MemoryWatcher(QThread *thread,
-                long pid,
-                long period,
-                std::atomic_int &queueSize,
-                QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+  ProcessMemoryWatcher(QThread *thread,
+                       pid_t pid,
+                       long period,
+                       std::atomic_int &queueSize,
+                       QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
 
-  ~MemoryWatcher();
+  ~ProcessMemoryWatcher();
 
 private:
   bool readSmaps(QList<SmapsRange> &ranges);
   bool readStatM(StatM &statm);
 
 private:
+  ProcessId processId;
   QTimer timer;
   QThread *thread;
   long period;

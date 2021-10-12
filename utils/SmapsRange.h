@@ -21,16 +21,14 @@
 
 #include <QString>
 
-class SmapsRange {
-public:
-  void debugPrint();
-  size_t sizeBytes();
-
-public:
+struct SmapsRange {
   size_t from{0};
   size_t to{0};
   QString permission;
   QString name;
   size_t rss{0}; // Ki
   size_t pss{0}; // Ki
+
+  void debugPrint();
+  size_t sizeBytes();
 };
