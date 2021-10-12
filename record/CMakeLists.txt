@@ -1,11 +1,11 @@
 
 set(HEADER_FILES
-    MemoryWatcher.h
+    ProcessMemoryWatcher.h
     Record.h
     Feeder.h)
 
 set(SOURCE_FILES
-    MemoryWatcher.cpp
+    ProcessMemoryWatcher.cpp
     Record.cpp
     Feeder.cpp)
 

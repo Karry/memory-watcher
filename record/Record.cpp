@@ -17,7 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "MemoryWatcher.h"
+#include "ProcessMemoryWatcher.h"
 #include "Record.h"
 
 #include <CmdLineParsing.h>
@@ -39,9 +39,9 @@ void Record::close()
   threadPool.close();
 }
 
-Record::Record(long pid, long period, QString databaseFile):
+Record::Record(QSet<long> pids, long period, QString databaseFile):
   watcherThread(threadPool.makeThread("watcher")),
-  watcher(new MemoryWatcher(watcherThread, pid, period, queueSize)),
+  watcher(new ProcessMemoryWatcher(watcherThread, /*pid*/0, period, queueSize)),
   feeder(new Feeder(queueSize))
 {
   qRegisterMetaType<StatM>();
@@ -51,7 +51,7 @@ Record::Record(long pid, long period, QString databaseFile):
   // init watcher
   watcher->moveToThread(watcherThread);
   QObject::connect(watcherThread, &QThread::started,
-                   watcher, &MemoryWatcher::init);
+                   watcher, &ProcessMemoryWatcher::init);
   watcherThread->start();
 
   if (!feeder->init(databaseFile)){
@@ -59,8 +59,8 @@ Record::Record(long pid, long period, QString databaseFile):
     return;
   }
 
-  connect(watcher, &MemoryWatcher::snapshot,
-          feeder, &Feeder::onSnapshot,
+  connect(watcher, &ProcessMemoryWatcher::snapshot,
+          feeder, &Feeder::onProcessSnapshot,
           Qt::QueuedConnection);
 
   // for debug
@@ -79,7 +79,7 @@ Record::~Record()
 struct Arguments {
   bool help{false};
   bool version{false};
-  long pid{-1};
+  QSet<long> pids;
   long period{1000};
   QString databaseFile;
 };
@@ -110,10 +110,11 @@ public:
               false);
 
     AddOption(CmdLineULongOption([this](const unsigned long &value) {
-                    args.pid = value;
+                    args.pids.insert(value);
                   }),
-                  "pid",
-                  "Pid of monitored process, if not defined, all processes are monitored");
+                  std::vector<std::string>{"p","pid"},
+                  "Pid of monitored process. May be defined multiple times. "s +
+                  "If not defined, all processes are monitored."s);
 
     AddOption(CmdLineULongOption([this](const unsigned long &value) {
                     args.period = value;
@@ -125,7 +126,7 @@ public:
       args.databaseFile = QString::fromStdString(value);
     }),
               "database-file",
-              "Sqlite database file for storing recording. Default is measurement${PID}.db");
+              "Sqlite database file for storing recording. Default is measurement.db");
   }
 
   Arguments GetArguments() const {
@@ -160,10 +161,11 @@ int main(int argc, char* argv[]) {
   }
 
   if (args.databaseFile.isEmpty()) {
-    args.databaseFile = QString("measurement.%1.db").arg(args.pid);
+    args.databaseFile = QString("measurement.db");
   }
 
-  Record *record = new Record(args.pid, args.period, args.databaseFile);
+  // TODO: implement system wide recording
+  Record *record = new Record(args.pids, args.period, args.databaseFile);
   std::function<void(int)> signalCallback = [&](int){ record->close(); };
   Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
                           &signalCallback);

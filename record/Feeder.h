@@ -18,7 +18,7 @@
 */
 #pragma once
 
-#include "MemoryWatcher.h"
+#include "ProcessMemoryWatcher.h"
 
 #include <Storage.h>
 
@@ -42,10 +42,10 @@ class Feeder : public QObject{
 
 signals:
 public slots:
-  void onSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
+  void onProcessSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
 
 public:
-  Feeder(std::atomic_int &queueSize);
+  explicit Feeder(std::atomic_int &queueSize);
   ~Feeder();
 
   bool init(QString file);
