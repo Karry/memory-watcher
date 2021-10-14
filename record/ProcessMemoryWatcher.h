@@ -34,35 +34,47 @@
 
 class ProcessMemoryWatcher : public QObject{
   Q_OBJECT
-  Q_DISABLE_COPY(ProcessMemoryWatcher)
+  Q_DISABLE_COPY_MOVE(ProcessMemoryWatcher)
 
 signals:
-  void snapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
+  void initialized(ProcessId processId, QString name);
+
+  void snapshot(QDateTime time,
+                ProcessId processId,
+                QList<SmapsRange> ranges,
+                StatM statm);
+
+  void exited(ProcessId processId);
 
 public slots:
   void init();
-  void update();
+  void update(QDateTime time);
 
 public:
   ProcessMemoryWatcher(QThread *thread,
                        pid_t pid,
-                       long period,
                        std::atomic_int &queueSize,
-                       QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+                       QString procFs);
 
-  ~ProcessMemoryWatcher();
+  virtual ~ProcessMemoryWatcher() = default;
+
+  ProcessId getProcessId() const {
+    return processId;
+  }
 
 private:
+  bool initSmaps();
+  QString readProcessName() const;
   bool readSmaps(QList<SmapsRange> &ranges);
   bool readStatM(StatM &statm);
 
 private:
   ProcessId processId;
-  QTimer timer;
   QThread *thread;
-  long period;
   QFileInfo smapsFile;
   QFileInfo statmFile;
+  QFileInfo statusFile;
   QString lastLineStart;
   std::atomic_int &queueSize; // not owning reference
+  bool accessible{true}; // false when smaps is not accessible (we don't have enough privileges)
 };

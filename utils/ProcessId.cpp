@@ -68,6 +68,10 @@ ProcessId::StartTime ProcessId::processStartTime(pid_t pid, const QString &procF
   return result;
 }
 
+bool operator<(const ProcessId &a, const ProcessId &b) {
+  return std::tie(a.pid, a.startTime) < std::tie(b.pid, b.startTime);
+}
+
 
 #ifdef UNIT_TESTS
 

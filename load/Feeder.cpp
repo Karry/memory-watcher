@@ -30,14 +30,6 @@ bool operator<(const RangeKey& a, const RangeKey& b)
   return a.permission < b.permission;
 }
 
-Feeder::Feeder()
-{
-}
-
-Feeder::~Feeder()
-{
-}
-
 void Feeder::onSnapshot(QDateTime time, QList<SmapsRange> ranges)
 {
   QMap<RangeKey, qlonglong> currentRanges;

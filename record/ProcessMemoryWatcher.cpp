@@ -28,27 +28,16 @@
 
 ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
                                            pid_t pid,
-                                           long period,
                                            std::atomic_int &queueSize,
                                            QString procFs):
   processId(pid, procFs),
   thread(thread),
-  period(period),
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
   statmFile(QString("%1/%2/statm").arg(procFs).arg(pid)),
+  statusFile(QString("%1/%2/status").arg(procFs).arg(pid)),
   queueSize(queueSize)
 {
-  timer.moveToThread(thread);
-}
-
-ProcessMemoryWatcher::~ProcessMemoryWatcher()
-{
-  if (thread != QThread::currentThread()) {
-    qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
-  }
-  qDebug() << "MemoryWatcher";
-  timer.stop();
-  thread->quit();
+  moveToThread(thread);
 }
 
 size_t parseMemory(const QString &line)
@@ -152,25 +141,29 @@ bool ProcessMemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
   return true;
 }
 
-void ProcessMemoryWatcher::update()
+void ProcessMemoryWatcher::update(QDateTime time)
 {
   if (thread != QThread::currentThread()) {
     qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
   }
 
-  if (!smapsFile.exists()){
-    qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
+  smapsFile.refresh(); // flush cached info, and get updated info
+  if (!smapsFile.exists()) {
+    // qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
+    emit exited(processId);
     return;
   }
 
-  if (queueSize > 10){
+  if (queueSize > 10000){
     qWarning() << "Full Queue" << queueSize;
     return;
   }
 
   QList<SmapsRange> ranges;
-  if (!readSmaps(ranges)){
-    return;
+  if (accessible) {
+    if (!readSmaps(ranges)) {
+      return;
+    }
   }
 
   StatM statm;
@@ -179,23 +172,19 @@ void ProcessMemoryWatcher::update()
   }
 
   queueSize++;
-  emit snapshot(QDateTime::currentDateTime(), ranges, statm);
+  emit snapshot(time, processId, ranges, statm);
 }
 
-void ProcessMemoryWatcher::init()
-{
-  timer.setSingleShot(false);
-  timer.setInterval(period);
-
+bool ProcessMemoryWatcher::initSmaps() {
   if (!smapsFile.exists()){
     qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
-    return;
+    return false;
   }
-
   QFile inputFile(smapsFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
     qWarning() << "Can't open file" << smapsFile.absoluteFilePath();
-    return;
+    // not enough privileges?
+    return false;
   }
   QTextStream in(&inputFile);
   QString lastLine;
@@ -203,19 +192,44 @@ void ProcessMemoryWatcher::init()
     lastLine = line;
   }
   inputFile.close();
-  if (lastLine.isEmpty()){
-    qWarning() << "Last line is empty" << smapsFile.absoluteFilePath();
-    return;
+  if (lastLine.isEmpty()) {
+    // qWarning() << "Last line is empty" << smapsFile.absoluteFilePath();
+    // kernel thread ?
+    return false;
   }
   QStringList arr = lastLine.split(":", QString::SkipEmptyParts);
-  if (arr.size() != 2){
+  if (arr.size() != 2) {
     qWarning() << "Last line is malformed" << smapsFile.absoluteFilePath();
-    return;
+    return false;
   }
   lastLineStart = arr[0];
-  qDebug() << "lastLineStart:" << lastLineStart;
+  // qDebug() << "lastLineStart:" << lastLineStart;
+  return true;
+}
 
-  connect(&timer, &QTimer::timeout, this, &ProcessMemoryWatcher::update);
+QString ProcessMemoryWatcher::readProcessName() const {
+  QFile inputFile(statusFile.absoluteFilePath());
+  if (!inputFile.open(QIODevice::ReadOnly)) {
+    qWarning() << "Can't open file" << statusFile.absoluteFilePath();
+    return "";
+  }
+  QTextStream in(&inputFile);
+  QString processName;
+  for (QString line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
+    if (line.startsWith("Name:")) {
+      processName = line.right(line.size() - QString("Name:").size()).trimmed();
+      break;
+    }
+  }
+  inputFile.close();
+  return processName;
+}
 
-  timer.start();
+void ProcessMemoryWatcher::init()
+{
+  accessible = initSmaps();
+  QString processName = readProcessName();
+  if (!processName.isEmpty()) {
+    emit initialized(processId, processName);
+  }
 }

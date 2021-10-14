@@ -38,7 +38,6 @@ Storage::~Storage()
       db.close();
     }
     db = QSqlDatabase(); // invalidate instance
-    QSqlDatabase::removeDatabase("storage");
   }
   qDebug() << "Storage is closed";
 }

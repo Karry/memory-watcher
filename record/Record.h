@@ -31,21 +31,39 @@
 
 class Record : public QObject {
   Q_OBJECT
-  Q_DISABLE_COPY(Record)
+  Q_DISABLE_COPY_MOVE(Record)
 
 public slots:
   void close();
+  void update();
+  void updateProcessList();
+  void processInitialized(ProcessId processId, QString name);
+  void processExited(ProcessId processId);
+
+signals:
+  void updateRequest(QDateTime time);
 
 public:
-  Record(QSet<long> pids, long period, QString databaseFile);
+  Record(QSet<long> pids,
+         long period,
+         QString databaseFile,
+         QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+
   ~Record();
 
 private:
+  void startProcessMonitor(pid_t pid);
+
+private:
+  QTimer timer;
   ThreadPool threadPool;
-  QThread *watcherThread;
   std::atomic_int queueSize{0};
-  ProcessMemoryWatcher *watcher;
+  std::vector<QThread*> watcherThreads;
+  uint64_t nextThread{0};
+  QMap<pid_t, ProcessMemoryWatcher *> watchers;
   Feeder *feeder;
+  bool monitorSystem{false};
+  QString procFs;
 
   //QTimer shutdownTimer;
 };
