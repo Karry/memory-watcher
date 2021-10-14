@@ -21,13 +21,8 @@
 
 #include <QDebug>
 
-bool operator<(const RangeKey& a, const RangeKey& b)
-{
-  if (a.from != b.from)
-    return a.from < b.from;
-  if (a.to != b.to)
-    return a.to < b.to;
-  return a.permission < b.permission;
+bool operator<(const RangeKey& a, const RangeKey& b) {
+  return std::tie(a.from, a.to, a.permission) < std::tie(b.from, b.to, b.permission);
 }
 
 Feeder::Feeder(std::atomic_int &queueSize):
@@ -35,11 +30,15 @@ Feeder::Feeder(std::atomic_int &queueSize):
 {
 }
 
-Feeder::~Feeder()
-{
+void Feeder::processInitialized([[maybe_unused]] ProcessId processId,
+                                [[maybe_unused]] QString name) {
+
 }
 
-void Feeder::onProcessSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm)
+void Feeder::onProcessSnapshot(QDateTime time,
+                               [[maybe_unused]] ProcessId processId,
+                               QList<SmapsRange> ranges,
+                               StatM statm)
 {
   QMap<RangeKey, qlonglong> currentRanges;
   queueSize--;

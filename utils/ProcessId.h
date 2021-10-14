@@ -39,5 +39,7 @@ struct ProcessId {
   ProcessId& operator=(ProcessId&&) = default;
 
   static StartTime processStartTime(pid_t pid, const QString &procFs);
+
+  friend bool operator<(const ProcessId&, const ProcessId&);
 };
 

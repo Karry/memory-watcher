@@ -37,9 +37,9 @@ public:
 
 bool operator<(const RangeKey&, const RangeKey&);
 
-class Feeder : public QObject{
+class Feeder : public QObject {
   Q_OBJECT
-  Q_DISABLE_COPY(Feeder)
+  Q_DISABLE_COPY_MOVE(Feeder)
 
 signals:
   void inserted();
@@ -48,8 +48,8 @@ public slots:
   void onSnapshot(QDateTime time, QList<SmapsRange> ranges);
 
 public:
-  Feeder();
-  ~Feeder();
+  Feeder() = default;
+  ~Feeder() = default;
 
   bool init(QString file);
 

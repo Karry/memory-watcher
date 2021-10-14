@@ -27,6 +27,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QDebug>
+#include <QDirIterator>
 
 #include <iostream>
 #include <signal.h>
@@ -34,34 +35,57 @@
 void Record::close()
 {
   qDebug() << "close()";
-  watcher->deleteLater();
+  timer.stop();
+  for (ProcessMemoryWatcher *watcher: watchers.values()) {
+    watcher->deleteLater();
+  }
+  watchers.clear();
+  for (auto *t: watcherThreads) {
+    t->quit(); // thread is deleted on finish
+  }
+  watcherThreads.clear();
   feeder->deleteLater();
   threadPool.close();
 }
 
-Record::Record(QSet<long> pids, long period, QString databaseFile):
-  watcherThread(threadPool.makeThread("watcher")),
-  watcher(new ProcessMemoryWatcher(watcherThread, /*pid*/0, period, queueSize)),
-  feeder(new Feeder(queueSize))
+Record::Record(QSet<long> pids,
+               long period,
+               QString databaseFile,
+               QString procFs):
+  feeder(new Feeder(queueSize)),
+  monitorSystem(pids.empty()),
+  procFs(procFs)
 {
   qRegisterMetaType<StatM>();
 
   connect(&threadPool, &ThreadPool::closed, this, &Record::deleteLater);
 
-  // init watcher
-  watcher->moveToThread(watcherThread);
-  QObject::connect(watcherThread, &QThread::started,
-                   watcher, &ProcessMemoryWatcher::init);
-  watcherThread->start();
+  timer.setSingleShot(false);
+  timer.setInterval(period);
+
+  connect(&timer, &QTimer::timeout, this, &Record::update);
+
+  timer.start();
 
   if (!feeder->init(databaseFile)){
     close();
     return;
   }
 
-  connect(watcher, &ProcessMemoryWatcher::snapshot,
-          feeder, &Feeder::onProcessSnapshot,
-          Qt::QueuedConnection);
+  watcherThreads.reserve(QThread::idealThreadCount());
+  for (int i = 0; i < QThread::idealThreadCount(); i++) {
+    QThread *t = threadPool.makeThread(QString("watcher-%1").arg(i));
+    t->start();
+    watcherThreads.push_back(t);
+  }
+
+  if (monitorSystem) {
+    updateProcessList();
+  } else {
+    for (pid_t pid: pids) {
+      startProcessMonitor(pid);
+    }
+  }
 
   // for debug
   // shutdownTimer.setSingleShot(true);
@@ -74,6 +98,70 @@ Record::~Record()
 {
   qDebug() << "~Watcher";
   QCoreApplication::quit();
+}
+
+void Record::startProcessMonitor(pid_t pid) {
+  assert(!watcherThreads.empty());
+  QThread *watcherThread = watcherThreads[ nextThread++ % watcherThreads.size()];
+  ProcessMemoryWatcher *watcher = new ProcessMemoryWatcher(watcherThread, pid, queueSize, procFs);
+
+  connect(watcher, &ProcessMemoryWatcher::snapshot,
+          feeder, &Feeder::onProcessSnapshot,
+          Qt::QueuedConnection);
+
+  connect(this, &Record::updateRequest,
+          watcher, &ProcessMemoryWatcher::update,
+          Qt::QueuedConnection);
+
+  connect(watcher, &ProcessMemoryWatcher::initialized,
+          feeder, &Feeder::processInitialized,
+          Qt::QueuedConnection);
+
+  connect(watcher, &ProcessMemoryWatcher::initialized,
+          this, &Record::processInitialized,
+          Qt::QueuedConnection);
+
+  connect(watcher, &ProcessMemoryWatcher::exited,
+          this, &Record::processExited,
+          Qt::QueuedConnection);
+
+  connect(watcherThread, &QThread::finished,
+          watcher, &ProcessMemoryWatcher::deleteLater);
+
+  watchers[pid] = watcher;
+  QMetaObject::invokeMethod(watcher, &ProcessMemoryWatcher::init);
+}
+
+void Record::processInitialized(ProcessId processId, QString name) {
+  qDebug() << "Process" << processId.pid << "initilized:" << name;
+}
+
+void Record::processExited(ProcessId processId) {
+  auto it = watchers.find(processId.pid);
+  if (it != watchers.end()) {
+    qDebug() << "Process" << processId.pid << "terminated";
+    it.value()->deleteLater();
+    watchers.remove(processId.pid);
+  }
+}
+
+void Record::updateProcessList() {
+  QDirIterator it(procFs);
+  bool ok;
+  while (it.hasNext()) {
+    QFileInfo dir(it.next());
+    auto pid = dir.fileName().toULongLong(&ok);
+    if (ok && pid <= std::numeric_limits<pid_t>::max() && !watchers.contains(pid)) {
+      startProcessMonitor(pid);
+    }
+  }
+}
+
+void Record::update() {
+  if (monitorSystem) {
+    updateProcessList();
+  }
+  emit updateRequest(QDateTime::currentDateTime());
 }
 
 struct Arguments {
@@ -123,8 +211,8 @@ public:
                   "Period of snapshot [ms], default "s + std::to_string(args.period));
 
     AddOption(CmdLineStringOption([this](const std::string &value){
-      args.databaseFile = QString::fromStdString(value);
-    }),
+                    args.databaseFile = QString::fromStdString(value);
+                  }),
               "database-file",
               "Sqlite database file for storing recording. Default is measurement.db");
   }
@@ -136,6 +224,7 @@ public:
 
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
+  qRegisterMetaType<ProcessId>("ProcessId");
   qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
 
   Arguments args;
@@ -164,14 +253,15 @@ int main(int argc, char* argv[]) {
     args.databaseFile = QString("measurement.db");
   }
 
-  // TODO: implement system wide recording
   Record *record = new Record(args.pids, args.period, args.databaseFile);
-  std::function<void(int)> signalCallback = [&](int){ record->close(); };
+  std::function<void(int)> signalCallback = [&](int){
+    Utils::cleanSignalCallback();
+    record->close();
+  };
   Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
                           &signalCallback);
 
   int result = app.exec();
-  Utils::cleanSignalCallback();
   qDebug() << "Main loop ended...";
   return result;
 }

@@ -32,21 +32,26 @@ public:
   size_t from{0};
   size_t to{0};
   QString permission;
-};
 
-bool operator<(const RangeKey&, const RangeKey&);
+  friend bool operator<(const RangeKey&, const RangeKey&);
+};
 
 class Feeder : public QObject{
   Q_OBJECT
-  Q_DISABLE_COPY(Feeder)
+  Q_DISABLE_COPY_MOVE(Feeder)
 
 signals:
 public slots:
-  void onProcessSnapshot(QDateTime time, QList<SmapsRange> ranges, StatM statm);
+  void processInitialized(ProcessId processId, QString name);
+
+  void onProcessSnapshot(QDateTime time,
+                         ProcessId processId,
+                         QList<SmapsRange> ranges,
+                         StatM statm);
 
 public:
   explicit Feeder(std::atomic_int &queueSize);
-  ~Feeder();
+  ~Feeder() = default;
 
   bool init(QString file);
 
