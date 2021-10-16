@@ -35,6 +35,9 @@ ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
   statmFile(QString("%1/%2/statm").arg(procFs).arg(pid)),
   statusFile(QString("%1/%2/status").arg(procFs).arg(pid)),
+  oomAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
+  oomScoreFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
+  oomScoreAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
   queueSize(queueSize)
 {
   moveToThread(thread);
@@ -68,8 +71,7 @@ void parseRange(SmapsRange &range, const QString &line)
   range.pss = 0;
 }
 
-bool ProcessMemoryWatcher::readStatM(StatM &statm)
-{
+bool ProcessMemoryWatcher::readStatM(StatM &statm) {
   QFile inputFile(statmFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
     qWarning() << "Can't open file" << statmFile.absoluteFilePath();
@@ -110,6 +112,41 @@ bool ProcessMemoryWatcher::readStatM(StatM &statm)
   return true;
 }
 
+bool ProcessMemoryWatcher::readInt(const QFileInfo &file, int &value) const {
+  if (!file.exists()) {
+    return false;
+  }
+
+  QFile inputFile(file.absoluteFilePath());
+  if (inputFile.open(QIODevice::ReadOnly)) {
+    qWarning() << "Can't open file" << file.absoluteFilePath();
+    return false;
+  }
+  QTextStream in(&inputFile);
+
+  QString line = in.readLine();
+  if (line.isEmpty()){
+    qWarning() << "Can't parse" << file.absoluteFilePath();
+    return false;
+  }
+
+  bool ok = true;
+  int i = line.toInt(&ok);
+  if (!ok) {
+    qWarning() << "Can't parse" << file.absoluteFilePath() << ":" << line;
+    return false;
+  }
+  value = i;
+  return true;
+}
+OomScore ProcessMemoryWatcher::readOomScore() {
+  OomScore result;
+  readInt(oomAdjFile, result.adj);
+  readInt(oomScoreFile, result.adj);
+  readInt(oomScoreAdjFile, result.adj);
+  return result;
+}
+
 bool ProcessMemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
 {
   QFile inputFile(smapsFile.absoluteFilePath());
@@ -137,7 +174,7 @@ bool ProcessMemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
       }
     }
   }
-  inputFile.close();
+
   return true;
 }
 
@@ -171,8 +208,10 @@ void ProcessMemoryWatcher::update(QDateTime time)
     return;
   }
 
+  OomScore oomScore = readOomScore();
+
   queueSize++;
-  emit snapshot(time, processId, ranges, statm);
+  emit snapshot(time, processId, ranges, statm, oomScore);
 }
 
 bool ProcessMemoryWatcher::initSmaps() {

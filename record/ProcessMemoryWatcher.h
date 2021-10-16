@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <OomScore.h>
 #include <ProcessId.h>
 #include <SmapsRange.h>
 
@@ -42,7 +43,8 @@ signals:
   void snapshot(QDateTime time,
                 ProcessId processId,
                 QList<SmapsRange> ranges,
-                StatM statm);
+                StatM statm,
+                OomScore oomScore);
 
   void exited(ProcessId processId);
 
@@ -67,6 +69,8 @@ private:
   QString readProcessName() const;
   bool readSmaps(QList<SmapsRange> &ranges);
   bool readStatM(StatM &statm);
+  bool readInt(const QFileInfo &file, int &value) const;
+  OomScore readOomScore();
 
 private:
   ProcessId processId;
@@ -74,6 +78,9 @@ private:
   QFileInfo smapsFile;
   QFileInfo statmFile;
   QFileInfo statusFile;
+  QFileInfo oomAdjFile;
+  QFileInfo oomScoreFile;
+  QFileInfo oomScoreAdjFile;
   QString lastLineStart;
   std::atomic_int &queueSize; // not owning reference
   bool accessible{true}; // false when smaps is not accessible (we don't have enough privileges)
