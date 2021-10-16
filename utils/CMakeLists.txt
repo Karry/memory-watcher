@@ -6,6 +6,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.h.cmake"
 
 set(HEADER_FILES
     CmdLineParsing.h
+    OomScore.h
     ProcessId.h
     QVariantConverters.h
     SmapsRange.h

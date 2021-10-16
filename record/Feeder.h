@@ -47,7 +47,8 @@ public slots:
   void onProcessSnapshot(QDateTime time,
                          ProcessId processId,
                          QList<SmapsRange> ranges,
-                         StatM statm);
+                         StatM statm,
+                         OomScore oomScore);
 
 public:
   explicit Feeder(std::atomic_int &queueSize);

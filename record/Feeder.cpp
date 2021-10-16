@@ -38,7 +38,8 @@ void Feeder::processInitialized([[maybe_unused]] ProcessId processId,
 void Feeder::onProcessSnapshot(QDateTime time,
                                [[maybe_unused]] ProcessId processId,
                                QList<SmapsRange> ranges,
-                               StatM statm)
+                               StatM statm,
+                               [[maybe_unused]] OomScore oomScore)
 {
   QMap<RangeKey, qlonglong> currentRanges;
   queueSize--;
