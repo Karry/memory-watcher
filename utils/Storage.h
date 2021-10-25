@@ -20,6 +20,9 @@
 #pragma once
 
 #include "StatM.h"
+#include "ProcessId.h"
+#include "SmapsRange.h"
+#include "OomScore.h"
 
 #include <QtCore/QObject>
 #include <QSqlDatabase>
@@ -61,20 +64,31 @@ enum MemoryType {
 
 class Storage : public QObject {
   Q_OBJECT
-  Q_DISABLE_COPY(Storage)
+  Q_DISABLE_COPY_MOVE(Storage)
 
 signals:
 public slots:
 public:
-  Storage();
+  Storage() = default;
   ~Storage();
 
   bool updateSchema();
   bool init(QString file);
 
-  qlonglong insertRange(qlonglong from, qlonglong to, QString permission, QString name);
-  qlonglong insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss, const StatM &statm);
-  bool insertData(qlonglong measurementId, const std::vector<MeasurementData> &measurements);
+  bool insertProcess(const ProcessId &processId, const QString &name);
+
+  qlonglong insertOrUpdateRange(const SmapsRange::Key &range);
+
+  qlonglong insertMeasurement(const ProcessId &processId,
+                              const QDateTime &time,
+                              qlonglong rss,
+                              qlonglong pss,
+                              const StatM &statm,
+                              const OomScore &oomScore);
+
+  bool insertData(const ProcessId &processId,
+                  const QDateTime &time,
+                  const QList<SmapsRange> &ranges);
 
   bool insertData(const std::vector<MeasurementData> &measurements);
 

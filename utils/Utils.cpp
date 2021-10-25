@@ -242,5 +242,12 @@ void Utils::clearScreen()
 {
   //system("clear");
   // TODO: remove execution of external binary
-  QProcess::execute("clear");
+  QProcess::execute("clear", QStringList());
+}
+
+void Utils::registerQtMetatypes() {
+  qRegisterMetaType<StatM>("StatM");
+  qRegisterMetaType<ProcessId>("ProcessId");
+  qRegisterMetaType<OomScore>("OomScore");
+  qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
 }

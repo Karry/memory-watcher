@@ -20,11 +20,44 @@
 #include "ProcessMemoryWatcher.h"
 #include <StatM.h>
 #include <Utils.h>
+#include <String.h>
 
 #include <QDebug>
 #include <QtCore/QFileInfo>
 #include <QTextStream>
 #include <QtCore/QDateTime>
+
+
+namespace {
+
+size_t parseMemory(const QString &line) {
+  QStringList arr = line.split(" ", SkipEmptyParts);
+  if (arr.size() == 3) {
+    return arr[1].toULongLong();
+  }
+  qWarning() << "Can't parse memory line" << line;
+  return 0;
+}
+
+void parseRange(SmapsRange &range, const QString &line, const ProcessId &processId) {
+  QStringList arr = line.split(" ", SkipEmptyParts);
+  if (arr.size() < 5) {
+    qWarning() << "Can't parse range:" << line;
+  }
+  QStringList arr2 = arr[0].split("-", SkipEmptyParts);
+  if (arr2.size() != 2) {
+    qWarning() << "Can't parse range:" << line;
+  }
+  range.key.processId = processId;
+  range.key.from = arr2[0].toULongLong(nullptr, 16);
+  range.key.to = arr2[1].toULongLong(nullptr, 16);
+  range.key.name = arr.size() >= 6 ? arr[5] : "";
+  range.key.permission = arr[1];
+  range.rss = 0;
+  range.pss = 0;
+}
+} // namespace
+
 
 ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
                                            pid_t pid,
@@ -43,34 +76,6 @@ ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
   moveToThread(thread);
 }
 
-size_t parseMemory(const QString &line)
-{
-  QStringList arr = line.split(" ", QString::SkipEmptyParts);
-  if (arr.size() == 3){
-    return arr[1].toULongLong();
-  }
-  qWarning() << "Can't parse memory line" << line;
-  return 0;
-}
-
-void parseRange(SmapsRange &range, const QString &line)
-{
-  QStringList arr = line.split(" ", QString::SkipEmptyParts);
-  if (arr.size() < 5){
-    qWarning() << "Can't parse range:" << line;
-  }
-  QStringList arr2 = arr[0].split("-", QString::SkipEmptyParts);
-  if (arr2.size() != 2){
-    qWarning() << "Can't parse range:" << line;
-  }
-  range.from = arr2[0].toULongLong(nullptr, 16);
-  range.to = arr2[1].toULongLong(nullptr, 16);
-  range.name = arr.size() >= 6 ? arr[5]: "";
-  range.permission = arr[1];
-  range.rss = 0;
-  range.pss = 0;
-}
-
 bool ProcessMemoryWatcher::readStatM(StatM &statm) {
   QFile inputFile(statmFile.absoluteFilePath());
   if (!inputFile.open(QIODevice::ReadOnly)) {
@@ -85,7 +90,7 @@ bool ProcessMemoryWatcher::readStatM(StatM &statm) {
     return false;
   }
 
-  QStringList arr = line.split(" ", QString::SkipEmptyParts);
+  QStringList arr = line.split(" ", SkipEmptyParts);
   if (arr.size() < 7){
     qWarning() << "Can't parse" << statmFile.absoluteFilePath();
     return false;
@@ -160,7 +165,7 @@ bool ProcessMemoryWatcher::readSmaps(QList<SmapsRange> &ranges)
   for (QString line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
     if (rangeLine) {
       //qDebug() << line;
-      parseRange(range, line);
+      parseRange(range, line, processId);
       rangeLine = false;
     }else{
       if (line.startsWith(lastLineStart)){
@@ -236,7 +241,7 @@ bool ProcessMemoryWatcher::initSmaps() {
     // kernel thread ?
     return false;
   }
-  QStringList arr = lastLine.split(":", QString::SkipEmptyParts);
+  QStringList arr = lastLine.split(":", SkipEmptyParts);
   if (arr.size() != 2) {
     qWarning() << "Last line is malformed" << smapsFile.absoluteFilePath();
     return false;

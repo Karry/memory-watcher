@@ -19,16 +19,30 @@
 
 #pragma once
 
+#include "ProcessId.h"
+
 #include <QString>
 
 struct SmapsRange {
-  size_t from{0};
-  size_t to{0};
-  QString permission;
-  QString name;
+  struct Key {
+    ProcessId processId;
+
+    size_t from{0};
+    size_t to{0};
+    QString permission;
+    QString name;
+
+    friend bool operator<(const Key&, const Key&);
+
+    qulonglong hash() const;
+    void debugPrint() const;
+    size_t sizeBytes() const;
+  };
+
+  Key key;
+
   size_t rss{0}; // Ki
   size_t pss{0}; // Ki
 
-  void debugPrint();
-  size_t sizeBytes();
+  void debugPrint() const;
 };

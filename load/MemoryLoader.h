@@ -36,7 +36,7 @@ Q_OBJECT
   Q_DISABLE_COPY(MemoryLoader)
 
 signals:
-  void loaded(QDateTime time, QList<SmapsRange> ranges);
+  void loaded(ProcessId processId, QDateTime time, QList<SmapsRange> ranges);
 
 public slots:
   void init();
@@ -44,7 +44,7 @@ public slots:
 
 public:
   MemoryLoader(QThread *thread,
-               long pid,
+               pid_t pid,
                const QString &smapsFile);
 
   ~MemoryLoader();
@@ -58,4 +58,5 @@ private:
   QThread *thread;
   QFileInfo smapsFile;
   QString lastLineStart;
+  ProcessId processId;
 };

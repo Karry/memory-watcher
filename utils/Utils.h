@@ -63,4 +63,5 @@ public:
   static void group(MeasurementGroups &g, const Measurement &measurement, MemoryType type, bool groupSockets = false);
   static void printMeasurement(const Measurement &measurement, MemoryType type);
   static void clearScreen();
+  static void registerQtMetatypes();
 };

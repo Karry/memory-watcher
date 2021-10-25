@@ -27,10 +27,6 @@
 
 using namespace converters;
 
-Storage::Storage()
-{
-}
-
 Storage::~Storage()
 {
   if (db.isValid()) {
@@ -46,10 +42,28 @@ bool Storage::updateSchema()
 {
   QStringList tables = db.tables();
 
-  if (!tables.contains("range")) {
+  if (!tables.contains("process")) {
 
-    QString sql("CREATE TABLE `range`");
-    sql.append("(").append( "`id` INTEGER PRIMARY KEY");
+    QString sql("CREATE TABLE `process`");
+    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of pid and start_time
+    sql.append(",").append( "`pid` INTEGER NOT NULL "); // system process id
+    sql.append(",").append( "`start_time` "); // from /proc/<pid>/stat
+    sql.append(",").append( "`name` varchar(255) NULL ");
+    sql.append(");");
+
+    QSqlQuery q = db.exec(sql);
+    if (q.lastError().isValid()) {
+      qWarning() << "Creating table process failed" << q.lastError();
+      db.close();
+      return false;
+    }
+  }
+
+  if (!tables.contains("memory_range")) {
+
+    QString sql("CREATE TABLE `memory_range`");
+    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of process_id, from, to and permission columns
+    sql.append(",").append( "`process_id` INTEGER NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
     sql.append(",").append( "`from` INTEGER NOT NULL ");
     sql.append(",").append( "`to` INTEGER NOT NULL ");
     sql.append(",").append( "`permission` varchar(255) NULL ");
@@ -58,7 +72,7 @@ bool Storage::updateSchema()
 
     QSqlQuery q = db.exec(sql);
     if (q.lastError().isValid()) {
-      qWarning() << "Creating table range failed" << q.lastError();
+      qWarning() << "Creating table memory_range failed" << q.lastError();
       db.close();
       return false;
     }
@@ -67,10 +81,15 @@ bool Storage::updateSchema()
   if (!tables.contains("measurement")) {
 
     QString sql("CREATE TABLE `measurement`");
-    sql.append("(").append( "`id` INTEGER NOT NULL PRIMARY KEY");
-    sql.append(",").append( "`time` datetime NOT NULL");
+    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of process_id and time
+    sql.append(",").append( "`process_id` INTEGER NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
+    sql.append(",").append( "`time` datetime NOT NULL ");
     sql.append(",").append( "`rss_sum` INTEGER NOT NULL ");
     sql.append(",").append( "`pss_sum` INTEGER NOT NULL ");
+
+    sql.append(",").append( "`oom_adj` INTEGER NOT NULL ");
+    sql.append(",").append( "`oom_score` INTEGER NOT NULL ");
+    sql.append(",").append( "`oom_score_adj` INTEGER NOT NULL ");
 
     sql.append(",").append( "`statm_size` INTEGER NOT NULL ");
     sql.append(",").append( "`statm_resident` INTEGER NOT NULL ");
@@ -93,7 +112,7 @@ bool Storage::updateSchema()
   if (!tables.contains("data")) {
 
     QString sql("CREATE TABLE `data`");
-    sql.append("(").append( "`range_id` INTEGER NOT NULL REFERENCES range(id) ON DELETE CASCADE");
+    sql.append("(").append( "`range_id` INTEGER NOT NULL REFERENCES memory_range(id) ON DELETE CASCADE");
     sql.append(",").append( "`measurement_id` INTEGER NOT NULL REFERENCES measurement(id) ON DELETE CASCADE");
     sql.append(",").append( "`rss` INTEGER NOT NULL ");
     sql.append(",").append( "`pss` INTEGER NOT NULL ");
@@ -146,14 +165,32 @@ bool Storage::init(QString file)
   return db.isValid() && db.isOpen();
 }
 
-qlonglong Storage::insertRange(qlonglong from, qlonglong to, QString permission, QString name)
+bool Storage::insertProcess(const ProcessId &processId, const QString &name) {
+  QSqlQuery sql(db);
+  sql.prepare("INSERT INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
+  sql.bindValue(":id", processId.hash());
+  sql.bindValue(":pid", processId.pid);
+  sql.bindValue(":start_time", processId.startTime);
+  sql.bindValue(":name", name);
+
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Insert process failed" << sql.lastError();
+    return false;
+  }
+  return true;
+}
+
+qlonglong Storage::insertOrUpdateRange(const SmapsRange::Key &range)
 {
   QSqlQuery sql(db);
-  sql.prepare("INSERT INTO `range` (`from`, `to`, `permission`, `name`) VALUES (:from, :to, :permission, :name)");
-  sql.bindValue(":from", from);
-  sql.bindValue(":to", to);
-  sql.bindValue(":permission", permission);
-  sql.bindValue(":name", name);
+  sql.prepare("INSERT OR REPLACE INTO `memory_range` (`id`, `process_id`, `from`, `to`, `permission`, `name`) VALUES (:id, :process_id, :from, :to, :permission, :name)");
+  sql.bindValue(":id", range.hash());
+  sql.bindValue(":process_id", range.processId.hash());
+  sql.bindValue(":from", qlonglong(range.from));
+  sql.bindValue(":to", qlonglong(range.to));
+  sql.bindValue(":permission", range.permission);
+  sql.bindValue(":name", range.name);
 
   sql.exec();
   if (sql.lastError().isValid()) {
@@ -164,23 +201,42 @@ qlonglong Storage::insertRange(qlonglong from, qlonglong to, QString permission,
   return varToLong(sql.lastInsertId());
 }
 
-qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlonglong pss, const StatM &statm)
+qlonglong measurementHash(const ProcessId &processId,
+                          const QDateTime &time) {
+  return processId.hash() ^ qHash(time);
+}
+
+qlonglong Storage::insertMeasurement(const ProcessId &processId,
+                                     const QDateTime &time,
+                                     qlonglong rss,
+                                     qlonglong pss,
+                                     const StatM &statm,
+                                     const OomScore &oomScore)
 {
 
 
   QSqlQuery sql(db);
   sql.prepare("INSERT INTO `measurement` ("
-              "  `time`, `rss_sum`, `pss_sum`,"
+              "  `id`, `process_id`, `time`, `rss_sum`, `pss_sum`,"
+              "  `oom_adj`, `oom_score`, `oom_score_adj`, "
               "  `statm_size`, `statm_resident`, `statm_shared`, `statm_text`, `statm_lib`, `statm_data`, `statm_dt` "
               ") VALUES ("
-              "  :time, :rss, :pss, "
+              "  :id, :process_id, :time, :rss, :pss, "
+              "  :oom_adj, :oom_score, :oom_score_adj, "
               "  :statm_size, :statm_resident, :statm_shared, :statm_text, :statm_lib, :statm_data, :statm_dt"
               ")");
   db.transaction();
 
+  sql.bindValue(":id", measurementHash(processId, time));
+  sql.bindValue(":process_id", processId.hash());
+
   sql.bindValue(":time", time);
   sql.bindValue(":rss", rss);
   sql.bindValue(":pss", pss);
+
+  sql.bindValue(":oom_adj", oomScore.adj);
+  sql.bindValue(":oom_score", oomScore.score);
+  sql.bindValue(":oom_score_adj", oomScore.score_adj);
 
   sql.bindValue(":statm_size", (qlonglong)statm.size);
   sql.bindValue(":statm_resident", (qlonglong)statm.resident);
@@ -199,16 +255,19 @@ qlonglong Storage::insertMeasurement(const QDateTime &time, qlonglong rss, qlong
   return varToLong(sql.lastInsertId());
 }
 
-bool Storage::insertData(qlonglong measurementId, const std::vector<MeasurementData> &measurements)
+bool Storage::insertData(const ProcessId &processId,
+                         const QDateTime &time,
+                         const QList<SmapsRange> &ranges)
 {
+  qlonglong measurementId = measurementHash(processId, time);
   QSqlQuery sql(db);
   sql.prepare("INSERT INTO `data` (`range_id`, `measurement_id`, `rss`, `pss`) VALUES (:range_id, :measurement_id, :rss, :pss)");
   db.transaction();
-  for (const auto &m: measurements) {
-    sql.bindValue(":range_id", m.rangeId);
+  for (const auto &m: ranges) {
+    sql.bindValue(":range_id", m.key.hash());
     sql.bindValue(":measurement_id", measurementId);
-    sql.bindValue(":rss", m.rss);
-    sql.bindValue(":pss", m.pss);
+    sql.bindValue(":rss", qlonglong(m.rss));
+    sql.bindValue(":pss", qlonglong(m.pss));
 
     sql.exec();
     if (sql.lastError().isValid()) {

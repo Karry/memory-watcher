@@ -21,10 +21,6 @@
 
 #include <QDebug>
 
-bool operator<(const RangeKey& a, const RangeKey& b) {
-  return std::tie(a.from, a.to, a.permission) < std::tie(b.from, b.to, b.permission);
-}
-
 Feeder::Feeder(std::atomic_int &queueSize):
   queueSize(queueSize)
 {
@@ -36,49 +32,27 @@ void Feeder::processInitialized([[maybe_unused]] ProcessId processId,
 }
 
 void Feeder::onProcessSnapshot(QDateTime time,
-                               [[maybe_unused]] ProcessId processId,
+                               ProcessId processId,
                                QList<SmapsRange> ranges,
                                StatM statm,
-                               [[maybe_unused]] OomScore oomScore)
+                               OomScore oomScore)
 {
-  QMap<RangeKey, qlonglong> currentRanges;
   queueSize--;
 
   storage.transaction();
 
   qlonglong rssSum = 0;
   qlonglong pssSum = 0;
-  std::vector<MeasurementData> measurements;
   for (const auto &r:ranges){
-    RangeKey key;
-    key.from = r.from;
-    key.to = r.to;
-    key.permission = r.permission;
-
-    qlonglong rangeId;
-    auto it = lastRanges.find(key);
-    if (it == lastRanges.end()){
-      rangeId = storage.insertRange(r.from, r.to, r.permission, r.name);
-    }else{
-      rangeId = it.value();
-    }
-
-    currentRanges[key] = rangeId;
-    MeasurementData m;
-    m.rangeId = rangeId;
-    m.rss = r.rss;
-    m.pss = r.pss;
+    storage.insertOrUpdateRange(r.key);
     rssSum += r.rss;
     pssSum += r.pss;
-    measurements.push_back(m);
   }
-  qlonglong measurementId = storage.insertMeasurement(time, rssSum, pssSum, statm);
-  storage.insertData(measurementId, measurements);
+  storage.insertMeasurement(processId, time, rssSum, pssSum, statm, oomScore);
+  storage.insertData(processId, time, ranges);
   if (!storage.commit()){
     qWarning() << "Failed to commit measurement";
   }
-
-  lastRanges = currentRanges;
 }
 
 bool Feeder::init(QString file)
