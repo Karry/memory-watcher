@@ -20,15 +20,17 @@
 #include "MemoryLoader.h"
 #include <StatM.h>
 #include <Utils.h>
+#include <String.h>
 
 #include <QDebug>
 #include <QtCore/QFileInfo>
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-MemoryLoader::MemoryLoader(QThread *thread, [[maybe_unused]] long pid, const QString &smapsFile):
+MemoryLoader::MemoryLoader(QThread *thread, pid_t pid, const QString &smapsFile):
   thread(thread),
-  smapsFile(smapsFile)
+  smapsFile(smapsFile),
+  processId(pid, 0)
 {
   timer.moveToThread(thread);
 }
@@ -45,7 +47,7 @@ MemoryLoader::~MemoryLoader()
 
 size_t parseMemory(const QString &line)
 {
-  QStringList arr = line.split(" ", QString::SkipEmptyParts);
+  QStringList arr = line.split(" ", SkipEmptyParts);
   if (arr.size() == 3){
     return arr[1].toULongLong();
   }
@@ -53,20 +55,21 @@ size_t parseMemory(const QString &line)
   return 0;
 }
 
-void parseRange(SmapsRange &range, const QString &line)
+void parseRange(SmapsRange &range, const QString &line, const ProcessId &processId)
 {
-  QStringList arr = line.split(" ", QString::SkipEmptyParts);
+  QStringList arr = line.split(" ", SkipEmptyParts);
   if (arr.size() < 5){
     qWarning() << "Can't parse range:" << line;
   }
-  QStringList arr2 = arr[0].split("-", QString::SkipEmptyParts);
+  QStringList arr2 = arr[0].split("-", SkipEmptyParts);
   if (arr2.size() != 2){
     qWarning() << "Can't parse range:" << line;
   }
-  range.from = arr2[0].toULongLong(nullptr, 16);
-  range.to = arr2[1].toULongLong(nullptr, 16);
-  range.name = arr.size() >= 6 ? arr[5]: "";
-  range.permission = arr[1];
+  range.key.processId = processId;
+  range.key.from = arr2[0].toULongLong(nullptr, 16);
+  range.key.to = arr2[1].toULongLong(nullptr, 16);
+  range.key.name = arr.size() >= 6 ? arr[5]: "";
+  range.key.permission = arr[1];
   range.rss = 0;
   range.pss = 0;
 }
@@ -84,7 +87,7 @@ bool MemoryLoader::readSmaps(QList<SmapsRange> &ranges)
   for (QString line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
     if (rangeLine) {
       //qDebug() << line;
-      parseRange(range, line);
+      parseRange(range, line, processId);
       rangeLine = false;
     }else{
       if (line.startsWith(lastLineStart)){
@@ -118,7 +121,7 @@ void MemoryLoader::update()
     return;
   }
 
-  emit loaded(QDateTime::currentDateTime(), ranges);
+  emit loaded(processId, QDateTime::currentDateTime(), ranges);
 }
 
 void MemoryLoader::init()
@@ -146,7 +149,7 @@ void MemoryLoader::init()
     qWarning() << "Last line is empty" << smapsFile.absoluteFilePath();
     return;
   }
-  QStringList arr = lastLine.split(":", QString::SkipEmptyParts);
+  QStringList arr = lastLine.split(":", SkipEmptyParts);
   if (arr.size() != 2){
     qWarning() << "Last line is malformed" << smapsFile.absoluteFilePath();
     return;

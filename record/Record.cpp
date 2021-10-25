@@ -56,8 +56,6 @@ Record::Record(QSet<long> pids,
   monitorSystem(pids.empty()),
   procFs(procFs)
 {
-  qRegisterMetaType<StatM>();
-
   connect(&threadPool, &ThreadPool::closed, this, &Record::deleteLater);
 
   timer.setSingleShot(false);
@@ -224,8 +222,7 @@ public:
 
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
-  qRegisterMetaType<ProcessId>("ProcessId");
-  qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
+  Utils::registerQtMetatypes();
 
   Arguments args;
   {

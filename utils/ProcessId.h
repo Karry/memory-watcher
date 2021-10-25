@@ -32,11 +32,16 @@ struct ProcessId {
   ProcessId(pid_t pid, const QString &procFs):
     pid(pid), startTime(processStartTime(pid, procFs)) {};
 
+  ProcessId(pid_t pid, StartTime startTime):
+    pid(pid), startTime(startTime) {};
+
   ProcessId(const ProcessId&) = default;
   ProcessId(ProcessId&&) = default;
   ~ProcessId() = default;
   ProcessId& operator=(const ProcessId&) = default;
   ProcessId& operator=(ProcessId&&) = default;
+
+  qulonglong hash() const;
 
   static StartTime processStartTime(pid_t pid, const QString &procFs);
 

@@ -22,14 +22,27 @@
 
 #include <QDebug>
 
-size_t SmapsRange::sizeBytes()
-{
+bool operator<(const SmapsRange::Key& a, const SmapsRange::Key& b) {
+  return std::tie(a.processId, a.from, a.to, a.permission, a.name) <
+         std::tie(b.processId, b.from, b.to, b.permission, b.name);
+}
+
+qulonglong SmapsRange::Key::hash() const {
+  return processId.hash() ^
+    (qulonglong(from) + qulonglong(to)) ^
+    (qulonglong(qHash(permission)) << 32);
+}
+
+size_t SmapsRange::Key::sizeBytes() const {
   return to - from;
 }
 
-void SmapsRange::debugPrint()
-{
+void SmapsRange::Key::debugPrint() const {
   qDebug() << QString::asprintf("%zx-%zx", from, to) << permission
-           << name << rss << pss;
+           << name;
 }
 
+void SmapsRange::debugPrint() const {
+  qDebug() << QString::asprintf("%zx-%zx", key.from, key.to) << key.permission
+           << key.name << rss << pss;
+}

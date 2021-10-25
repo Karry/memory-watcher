@@ -43,7 +43,7 @@ Load::Load(long pid, const QString &smapsFile, const QString &databaseFile):
   loader(new MemoryLoader(loaderThread, pid, smapsFile)),
   feeder(new Feeder())
 {
-  qRegisterMetaType<StatM>();
+  Utils::registerQtMetatypes();
 
   connect(&threadPool, &ThreadPool::closed, this, &Load::deleteLater);
 
@@ -80,7 +80,7 @@ Load::~Load()
 
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
-  qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
+  Utils::registerQtMetatypes();
 
   if (app.arguments().size() < 3){
     std::cerr << "Usage:" << std::endl;

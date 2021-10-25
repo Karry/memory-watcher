@@ -27,15 +27,6 @@
 
 #include <atomic>
 
-class RangeKey {
-public:
-  size_t from{0};
-  size_t to{0};
-  QString permission;
-
-  friend bool operator<(const RangeKey&, const RangeKey&);
-};
-
 class Feeder : public QObject{
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(Feeder)
@@ -59,5 +50,4 @@ public:
 private:
   std::atomic_int &queueSize; // not owning reference
   Storage storage;
-  QMap<RangeKey, qlonglong> lastRanges;
 };

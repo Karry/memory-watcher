@@ -28,15 +28,6 @@
 
 #include <atomic>
 
-class RangeKey {
-public:
-  size_t from{0};
-  size_t to{0};
-  QString permission;
-};
-
-bool operator<(const RangeKey&, const RangeKey&);
-
 class Feeder : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(Feeder)
@@ -45,7 +36,7 @@ signals:
   void inserted();
 
 public slots:
-  void onSnapshot(QDateTime time, QList<SmapsRange> ranges);
+  void onSnapshot(ProcessId processId, QDateTime time, QList<SmapsRange> ranges);
 
 public:
   Feeder() = default;
@@ -55,5 +46,4 @@ public:
 
 private:
   Storage storage;
-  QMap<RangeKey, qlonglong> lastRanges;
 };

@@ -18,6 +18,7 @@
 */
 
 #include "ProcessId.h"
+#include "String.h"
 
 #include <QFile>
 #include <QDir>
@@ -44,7 +45,7 @@ ProcessId::StartTime ProcessId::processStartTime(pid_t pid, const QString &procF
     return 0;
   }
 
-  QStringList arr = line.right((line.size() - execNameEnd) - 1).split(" ", QString::SkipEmptyParts);
+  QStringList arr = line.right((line.size() - execNameEnd) - 1).split(" ", SkipEmptyParts);
   if (arr.size() < 20){
     qWarning() << "Can't parse" << statFile;
     return 0;
@@ -66,6 +67,11 @@ ProcessId::StartTime ProcessId::processStartTime(pid_t pid, const QString &procF
   }
 
   return result;
+}
+
+qulonglong ProcessId::hash() const {
+  constexpr uint bitShift = (sizeof(qulonglong) - sizeof(uint)) * 8;
+  return qulonglong(qHash(pid)) ^ (qulonglong(qHash(startTime)) << bitShift);
 }
 
 bool operator<(const ProcessId &a, const ProcessId &b) {

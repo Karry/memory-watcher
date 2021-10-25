@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <QString>
+
 #include <limits>
 #include <list>
 #include <memory>
@@ -26,6 +28,12 @@
 #include <chrono>
 #include <cassert>
 
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0) /* For compatibility with QT 5.6 */
+constexpr QString::SplitBehavior SkipEmptyParts = SkipEmptyParts;
+#else
+constexpr Qt::SplitBehaviorFlags SkipEmptyParts = Qt::SkipEmptyParts;
+#endif
 
 /**
  * \ingroup Util
