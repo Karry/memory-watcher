@@ -25,6 +25,13 @@
 #include <QDebug>
 #include <QTextStream>
 
+#if QT_VERSION <= QT_VERSION_CHECK(5, 6, 3)
+QDebug& operator<<(QDebug &d, const QFile &f) {
+  d << f.fileName();
+  return d;
+}
+#endif
+
 ProcessId::StartTime ProcessId::processStartTime(pid_t pid, const QString &procFs) {
   QFile statFile(QString("%1/%2/stat").arg(procFs).arg(pid));
   if (!statFile.open(QIODevice::ReadOnly)) {

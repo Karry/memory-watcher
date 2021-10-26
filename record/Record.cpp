@@ -127,7 +127,12 @@ void Record::startProcessMonitor(pid_t pid) {
           watcher, &ProcessMemoryWatcher::deleteLater);
 
   watchers[pid] = watcher;
-  QMetaObject::invokeMethod(watcher, &ProcessMemoryWatcher::init);
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+  QMetaObject::invokeMethod(watcher, "init", Qt::QueuedConnection);
+#else
+  QMetaObject::invokeMethod(watcher, &ProcessMemoryWatcher::init, Qt::QueuedConnection);
+#endif
 }
 
 void Record::processInitialized(ProcessId processId, QString name) {
