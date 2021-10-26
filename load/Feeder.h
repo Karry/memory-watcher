@@ -22,6 +22,7 @@
 #include "MemoryLoader.h"
 
 #include <Storage.h>
+#include <Utils.h>
 
 #include <QObject>
 #include <QMap>

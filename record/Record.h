@@ -23,6 +23,7 @@
 #include "Feeder.h"
 
 #include <ThreadPool.h>
+#include <Utils.h>
 
 #include <QObject>
 #include <QThread>

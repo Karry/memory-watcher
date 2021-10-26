@@ -22,6 +22,7 @@
 #include <OomScore.h>
 #include <ProcessId.h>
 #include <SmapsRange.h>
+#include <Utils.h>
 
 #include <QtCore/QObject>
 #include <QThread>
