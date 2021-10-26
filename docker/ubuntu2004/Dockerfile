@@ -1,5 +1,5 @@
 # docker build --tag memory-watcher-ubuntu-2004 docker/ubuntu2004
-# docker build --tag memory-watcher-ubuntu-2004 docker/ubuntu2004
+# docker run --rm=true -it memory-watcher-ubuntu-2004
 FROM ubuntu:20.04
 
 # disable interactive functions
