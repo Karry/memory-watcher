@@ -23,44 +23,12 @@
 #include "ProcessId.h"
 #include "SmapsRange.h"
 #include "OomScore.h"
+#include "Utils.h"
 
 #include <QtCore/QObject>
 #include <QSqlDatabase>
 #include <QDateTime>
 #include <QMap>
-
-class MeasurementData
-{
-public:
-  qlonglong rangeId{0};
-  qlonglong rss{0};
-  qlonglong pss{0};
-};
-
-class Range {
-public:
-  qlonglong from{0};
-  qlonglong to{0};
-  QString permission;
-  QString name;
-};
-
-class Measurement {
-public:
-  qlonglong id{0};
-  QDateTime time;
-  StatM statm;
-  QMap<qlonglong, Range> rangeMap;
-  QList<MeasurementData> data;
-};
-
-enum MemoryType {
-  // SMaps
-  Rss,
-  Pss,
-  // statm
-  StatmRss
-};
 
 class Storage : public QObject {
   Q_OBJECT

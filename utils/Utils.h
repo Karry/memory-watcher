@@ -19,27 +19,62 @@
 
 #pragma once
 
-#include "Storage.h"
+#include "StatM.h"
+#include "ProcessId.h"
+#include "OomScore.h"
+#include "SmapsRange.h"
 
+#include <QDateTime>
 #include <QThread>
 #include <QString>
+#include <QMap>
 
 #include <functional>
 #include <unordered_map>
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
+#define Q_DISABLE_COPY_MOVE Q_DISABLE_COPY
+#endif
+
 constexpr size_t PageSizeKiB = 4;
 
-struct Mapping
-{
+struct MeasurementData {
+  qlonglong rangeId{0};
+  qlonglong rss{0};
+  qlonglong pss{0};
+};
+
+struct Range {
+  qlonglong from{0};
+  qlonglong to{0};
+  QString permission;
+  QString name;
+};
+
+struct Measurement {
+  qlonglong id{0};
+  QDateTime time;
+  StatM statm;
+  QMap<qlonglong, Range> rangeMap;
+  QList<MeasurementData> data;
+};
+
+enum MemoryType {
+  // SMaps
+  Rss,
+  Pss,
+  // statm
+  StatmRss
+};
+
+struct Mapping {
   std::string name;
   size_t size;
 };
 
-class MeasurementGroups{
-public:
+struct MeasurementGroups {
   std::vector<Mapping> sortedMappings() const;
 
-public:
   size_t threadStacks{0};
   size_t anonymous{0};
   size_t heap{0};
