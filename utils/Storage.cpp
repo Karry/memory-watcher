@@ -45,7 +45,7 @@ bool Storage::updateSchema()
   if (!tables.contains("process")) {
 
     QString sql("CREATE TABLE `process`");
-    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of pid and start_time
+    sql.append("(").append( "`id` UNSIGNED BIG INT PRIMARY KEY "); // hash of pid and start_time
     sql.append(",").append( "`pid` INTEGER NOT NULL "); // system process id
     sql.append(",").append( "`start_time` "); // from /proc/<pid>/stat
     sql.append(",").append( "`name` varchar(255) NULL ");
@@ -62,8 +62,8 @@ bool Storage::updateSchema()
   if (!tables.contains("memory_range")) {
 
     QString sql("CREATE TABLE `memory_range`");
-    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of process_id, from, to and permission columns
-    sql.append(",").append( "`process_id` INTEGER NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
+    sql.append("(").append( "`id` UNSIGNED BIG INT PRIMARY KEY "); // hash of process_id, from, to and permission columns
+    sql.append(",").append( "`process_id` UNSIGNED BIG INT NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
     sql.append(",").append( "`from` INTEGER NOT NULL ");
     sql.append(",").append( "`to` INTEGER NOT NULL ");
     sql.append(",").append( "`permission` varchar(255) NULL ");
@@ -81,8 +81,8 @@ bool Storage::updateSchema()
   if (!tables.contains("measurement")) {
 
     QString sql("CREATE TABLE `measurement`");
-    sql.append("(").append( "`id` INTEGER PRIMARY KEY "); // hash of process_id and time
-    sql.append(",").append( "`process_id` INTEGER NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
+    sql.append("(").append( "`id` UNSIGNED BIG INT PRIMARY KEY "); // hash of process_id and time
+    sql.append(",").append( "`process_id` UNSIGNED BIG INT NOT NULL REFERENCES process(id) ON DELETE CASCADE ");
     sql.append(",").append( "`time` datetime NOT NULL ");
     sql.append(",").append( "`rss_sum` INTEGER NOT NULL ");
     sql.append(",").append( "`pss_sum` INTEGER NOT NULL ");
@@ -112,8 +112,8 @@ bool Storage::updateSchema()
   if (!tables.contains("data")) {
 
     QString sql("CREATE TABLE `data`");
-    sql.append("(").append( "`range_id` INTEGER NOT NULL REFERENCES memory_range(id) ON DELETE CASCADE");
-    sql.append(",").append( "`measurement_id` INTEGER NOT NULL REFERENCES measurement(id) ON DELETE CASCADE");
+    sql.append("(").append( "`range_id` UNSIGNED BIG INT NOT NULL REFERENCES memory_range(id) ON DELETE CASCADE");
+    sql.append(",").append( "`measurement_id` UNSIGNED BIG INT NOT NULL REFERENCES measurement(id) ON DELETE CASCADE");
     sql.append(",").append( "`rss` INTEGER NOT NULL ");
     sql.append(",").append( "`pss` INTEGER NOT NULL ");
     sql.append(");");
@@ -175,7 +175,8 @@ bool Storage::insertProcess(const ProcessId &processId, const QString &name) {
 
   sql.exec();
   if (sql.lastError().isValid()) {
-    qWarning() << "Insert process failed" << sql.lastError();
+    qWarning() << "Insert process (pid" << processId.pid <<
+      "hash" << processId.hash() << ") failed" << sql.lastError();
     return false;
   }
   return true;
