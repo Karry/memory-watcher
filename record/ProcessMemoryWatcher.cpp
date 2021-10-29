@@ -121,7 +121,7 @@ bool ProcessMemoryWatcher::readInt(const QFileInfo &file, int &value) const {
   }
 
   QFile inputFile(file.absoluteFilePath());
-  if (inputFile.open(QIODevice::ReadOnly)) {
+  if (!inputFile.open(QIODevice::ReadOnly)) {
     qWarning() << "Can't open file" << file.absoluteFilePath();
     return false;
   }
