@@ -21,13 +21,6 @@
 #include "ThreadPool.h"
 #include <QDebug>
 
-ThreadPool::ThreadPool()
-{}
-
-ThreadPool::~ThreadPool()
-{
-}
-
 void ThreadPool::checkClosed()
 {
   closeTimeout++;
