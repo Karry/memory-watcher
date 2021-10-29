@@ -26,8 +26,7 @@
 /**
  * see statm in `man proc`, sizes are in KiB, not pages!
  */
-class StatM {
-public:
+struct StatM {
   size_t size{0};      // total program size
                        // (same as VmSize in /proc/[pid]/status)
   size_t resident{0};  // resident set size

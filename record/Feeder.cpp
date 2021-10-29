@@ -48,6 +48,10 @@ void Feeder::onProcessSnapshot(QDateTime time,
   }
 }
 
+void Feeder::onSystemSnapshot(QDateTime time, MemInfo memInfo) {
+  storage.insertSystemMemInfo(time, memInfo);
+}
+
 bool Feeder::init(QString file)
 {
   return storage.init(file);

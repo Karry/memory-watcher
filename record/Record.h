@@ -21,6 +21,7 @@
 
 #include "ProcessMemoryWatcher.h"
 #include "Feeder.h"
+#include "SystemMemoryWatcher.h"
 
 #include <ThreadPool.h>
 #include <Utils.h>
@@ -61,6 +62,7 @@ private:
   std::vector<QThread*> watcherThreads;
   uint64_t nextThread{0};
   QMap<pid_t, ProcessMemoryWatcher *> watchers;
+  SystemMemoryWatcher systemMemoryWatcher;
   Feeder feeder;
   bool monitorSystem{false};
   QString procFs;

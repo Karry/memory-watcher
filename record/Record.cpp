@@ -52,6 +52,7 @@ Record::Record(QSet<long> pids,
                QString databaseFile,
                QString procFs):
   monitorSystem(pids.empty()),
+  systemMemoryWatcher(procFs),
   procFs(procFs)
 {
   connect(&threadPool, &ThreadPool::closed, this, &Record::deleteLater);
@@ -82,6 +83,13 @@ Record::Record(QSet<long> pids,
       startProcessMonitor(pid);
     }
   }
+
+  connect(this, &Record::updateRequest,
+          &systemMemoryWatcher, &SystemMemoryWatcher::update);
+
+  connect(&systemMemoryWatcher, &SystemMemoryWatcher::systemSnapshot,
+          &feeder, &Feeder::onSystemSnapshot,
+          Qt::QueuedConnection);
 
   // for debug
   // shutdownTimer.setSingleShot(true);

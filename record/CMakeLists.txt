@@ -2,12 +2,14 @@
 set(HEADER_FILES
     ProcessMemoryWatcher.h
     Record.h
-    Feeder.h)
+    Feeder.h
+    SystemMemoryWatcher.h)
 
 set(SOURCE_FILES
     ProcessMemoryWatcher.cpp
     Record.cpp
-    Feeder.cpp)
+    Feeder.cpp
+    SystemMemoryWatcher.cpp)
 
 add_executable(memory-record ${SOURCE_FILES} ${HEADER_FILES})
 
