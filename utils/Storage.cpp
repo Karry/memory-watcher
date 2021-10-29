@@ -181,7 +181,7 @@ bool Storage::init(QString file)
     sqlProcessInsert.prepare("INSERT OR IGNORE INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
 
     sqlRangeInsert = QSqlQuery(db);
-    sqlRangeInsert.prepare("INSERT OR REPLACE INTO `memory_range` (`id`, `process_id`, `from`, `to`, `permission`, `name`) VALUES (:id, :process_id, :from, :to, :permission, :name)");
+    sqlRangeInsert.prepare("INSERT OR IGNORE INTO `memory_range` (`id`, `process_id`, `from`, `to`, `permission`, `name`) VALUES (:id, :process_id, :from, :to, :permission, :name)");
 
     sqlMeasurementInsert = QSqlQuery(db);
     sqlMeasurementInsert.prepare("INSERT INTO `measurement` ("
@@ -215,7 +215,7 @@ bool Storage::insertOrIgnoreProcess(const ProcessId &processId, const QString &n
   return true;
 }
 
-qlonglong Storage::insertOrUpdateRange(const SmapsRange::Key &range)
+qlonglong Storage::insertOrIgnoreRange(const SmapsRange::Key &range)
 {
   sqlRangeInsert.bindValue(":id", range.hash());
   sqlRangeInsert.bindValue(":process_id", range.processId.hash());
