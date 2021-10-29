@@ -65,7 +65,7 @@ QThread *ThreadPool::makeThread(QString name)
 
 void ThreadPool::threadFinished()
 {
-  qDebug() << "Thread finished" << QThread::currentThread();
+  qDebug() << "Thread finished" << QObject::sender();
   liveBackgroundThreads--;
 }
 
