@@ -37,8 +37,8 @@ public slots:
   void checkClosed();
 
 public:
-  ThreadPool();
-  ~ThreadPool();
+  ThreadPool() = default;
+  ~ThreadPool() = default;
 
   QThread *makeThread(QString name);
   void close();
