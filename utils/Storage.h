@@ -27,6 +27,7 @@
 
 #include <QtCore/QObject>
 #include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QDateTime>
 #include <QMap>
 
@@ -95,5 +96,9 @@ private:
 
 private:
   QSqlDatabase db;
+  QSqlQuery sqlProcessInsert;
+  QSqlQuery sqlRangeInsert;
+  QSqlQuery sqlMeasurementInsert;
+  QSqlQuery sqlDataInsert;
 };
 
