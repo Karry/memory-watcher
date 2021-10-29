@@ -28,7 +28,7 @@ void Feeder::onSnapshot(ProcessId processId, QDateTime time, QList<SmapsRange> r
   qlonglong rssSum = 0;
   qlonglong pssSum = 0;
   for (const auto &r:ranges){
-    storage.insertOrUpdateRange(r.key);
+    storage.insertOrIgnoreRange(r.key);
     rssSum += r.rss;
     pssSum += r.pss;
 

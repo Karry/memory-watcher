@@ -46,7 +46,7 @@ public:
 
   bool insertOrIgnoreProcess(const ProcessId &processId, const QString &name);
 
-  qlonglong insertOrUpdateRange(const SmapsRange::Key &range);
+  qlonglong insertOrIgnoreRange(const SmapsRange::Key &range);
 
   qlonglong insertMeasurement(const ProcessId &processId,
                               const QDateTime &time,
