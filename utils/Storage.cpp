@@ -162,21 +162,41 @@ bool Storage::init(QString file)
     qWarning() << "Enabling foreign keys fails:" << q.lastError();
   }
 
-  return db.isValid() && db.isOpen();
+  bool valid = db.isValid() && db.isOpen();
+  if (valid) {
+    sqlProcessInsert = QSqlQuery(db);
+    sqlProcessInsert.prepare("INSERT OR IGNORE INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
+
+    sqlRangeInsert = QSqlQuery(db);
+    sqlRangeInsert.prepare("INSERT OR REPLACE INTO `memory_range` (`id`, `process_id`, `from`, `to`, `permission`, `name`) VALUES (:id, :process_id, :from, :to, :permission, :name)");
+
+    sqlMeasurementInsert = QSqlQuery(db);
+    sqlMeasurementInsert.prepare("INSERT INTO `measurement` ("
+                                 "  `id`, `process_id`, `time`, `rss_sum`, `pss_sum`,"
+                                 "  `oom_adj`, `oom_score`, `oom_score_adj`, "
+                                 "  `statm_size`, `statm_resident`, `statm_shared`, `statm_text`, `statm_lib`, `statm_data`, `statm_dt` "
+                                 ") VALUES ("
+                                 "  :id, :process_id, :time, :rss, :pss, "
+                                 "  :oom_adj, :oom_score, :oom_score_adj, "
+                                 "  :statm_size, :statm_resident, :statm_shared, :statm_text, :statm_lib, :statm_data, :statm_dt"
+                                 ")");
+
+    sqlDataInsert = QSqlQuery(db);
+    sqlDataInsert.prepare("INSERT INTO `data` (`range_id`, `measurement_id`, `rss`, `pss`) VALUES (:range_id, :measurement_id, :rss, :pss)");
+  }
+  return valid;
 }
 
 bool Storage::insertOrIgnoreProcess(const ProcessId &processId, const QString &name) {
-  QSqlQuery sql(db);
-  sql.prepare("INSERT OR IGNORE INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
-  sql.bindValue(":id", processId.hash());
-  sql.bindValue(":pid", processId.pid);
-  sql.bindValue(":start_time", processId.startTime);
-  sql.bindValue(":name", name);
+  sqlProcessInsert.bindValue(":id", processId.hash());
+  sqlProcessInsert.bindValue(":pid", processId.pid);
+  sqlProcessInsert.bindValue(":start_time", processId.startTime);
+  sqlProcessInsert.bindValue(":name", name);
 
-  sql.exec();
-  if (sql.lastError().isValid()) {
+  sqlProcessInsert.exec();
+  if (sqlProcessInsert.lastError().isValid()) {
     qWarning() << "Insert process (pid" << processId.pid <<
-      "hash" << processId.hash() << ") failed" << sql.lastError();
+               "hash" << processId.hash() << ") failed" << sqlProcessInsert.lastError();
     return false;
   }
   return true;
@@ -184,22 +204,20 @@ bool Storage::insertOrIgnoreProcess(const ProcessId &processId, const QString &n
 
 qlonglong Storage::insertOrUpdateRange(const SmapsRange::Key &range)
 {
-  QSqlQuery sql(db);
-  sql.prepare("INSERT OR REPLACE INTO `memory_range` (`id`, `process_id`, `from`, `to`, `permission`, `name`) VALUES (:id, :process_id, :from, :to, :permission, :name)");
-  sql.bindValue(":id", range.hash());
-  sql.bindValue(":process_id", range.processId.hash());
-  sql.bindValue(":from", qlonglong(range.from));
-  sql.bindValue(":to", qlonglong(range.to));
-  sql.bindValue(":permission", range.permission);
-  sql.bindValue(":name", range.name);
+  sqlRangeInsert.bindValue(":id", range.hash());
+  sqlRangeInsert.bindValue(":process_id", range.processId.hash());
+  sqlRangeInsert.bindValue(":from", qlonglong(range.from));
+  sqlRangeInsert.bindValue(":to", qlonglong(range.to));
+  sqlRangeInsert.bindValue(":permission", range.permission);
+  sqlRangeInsert.bindValue(":name", range.name);
 
-  sql.exec();
-  if (sql.lastError().isValid()) {
-    qWarning() << "Insert range failed" << sql.lastError();
+  sqlRangeInsert.exec();
+  if (sqlRangeInsert.lastError().isValid()) {
+    qWarning() << "Insert range failed" << sqlRangeInsert.lastError();
     return 0;
   }
 
-  return varToLong(sql.lastInsertId());
+  return varToLong(sqlRangeInsert.lastInsertId());
 }
 
 qlonglong measurementHash(const ProcessId &processId,
@@ -214,46 +232,32 @@ qlonglong Storage::insertMeasurement(const ProcessId &processId,
                                      const StatM &statm,
                                      const OomScore &oomScore)
 {
+  sqlMeasurementInsert.bindValue(":id", measurementHash(processId, time));
+  sqlMeasurementInsert.bindValue(":process_id", processId.hash());
 
+  sqlMeasurementInsert.bindValue(":time", time);
+  sqlMeasurementInsert.bindValue(":rss", rss);
+  sqlMeasurementInsert.bindValue(":pss", pss);
 
-  QSqlQuery sql(db);
-  sql.prepare("INSERT INTO `measurement` ("
-              "  `id`, `process_id`, `time`, `rss_sum`, `pss_sum`,"
-              "  `oom_adj`, `oom_score`, `oom_score_adj`, "
-              "  `statm_size`, `statm_resident`, `statm_shared`, `statm_text`, `statm_lib`, `statm_data`, `statm_dt` "
-              ") VALUES ("
-              "  :id, :process_id, :time, :rss, :pss, "
-              "  :oom_adj, :oom_score, :oom_score_adj, "
-              "  :statm_size, :statm_resident, :statm_shared, :statm_text, :statm_lib, :statm_data, :statm_dt"
-              ")");
-  db.transaction();
+  sqlMeasurementInsert.bindValue(":oom_adj", oomScore.adj);
+  sqlMeasurementInsert.bindValue(":oom_score", oomScore.score);
+  sqlMeasurementInsert.bindValue(":oom_score_adj", oomScore.score_adj);
 
-  sql.bindValue(":id", measurementHash(processId, time));
-  sql.bindValue(":process_id", processId.hash());
+  sqlMeasurementInsert.bindValue(":statm_size", (qlonglong)statm.size);
+  sqlMeasurementInsert.bindValue(":statm_resident", (qlonglong)statm.resident);
+  sqlMeasurementInsert.bindValue(":statm_shared", (qlonglong)statm.shared);
+  sqlMeasurementInsert.bindValue(":statm_text", (qlonglong)statm.text);
+  sqlMeasurementInsert.bindValue(":statm_lib", (qlonglong)statm.lib);
+  sqlMeasurementInsert.bindValue(":statm_data", (qlonglong)statm.data);
+  sqlMeasurementInsert.bindValue(":statm_dt", (qlonglong)statm.dt);
 
-  sql.bindValue(":time", time);
-  sql.bindValue(":rss", rss);
-  sql.bindValue(":pss", pss);
-
-  sql.bindValue(":oom_adj", oomScore.adj);
-  sql.bindValue(":oom_score", oomScore.score);
-  sql.bindValue(":oom_score_adj", oomScore.score_adj);
-
-  sql.bindValue(":statm_size", (qlonglong)statm.size);
-  sql.bindValue(":statm_resident", (qlonglong)statm.resident);
-  sql.bindValue(":statm_shared", (qlonglong)statm.shared);
-  sql.bindValue(":statm_text", (qlonglong)statm.text);
-  sql.bindValue(":statm_lib", (qlonglong)statm.lib);
-  sql.bindValue(":statm_data", (qlonglong)statm.data);
-  sql.bindValue(":statm_dt", (qlonglong)statm.dt);
-
-  sql.exec();
-  if (sql.lastError().isValid()) {
-    qWarning() << "Insert measurement failed" << sql.lastError();
+  sqlMeasurementInsert.exec();
+  if (sqlMeasurementInsert.lastError().isValid()) {
+    qWarning() << "Insert measurement failed" << sqlMeasurementInsert.lastError();
     return 0;
   }
 
-  return varToLong(sql.lastInsertId());
+  return varToLong(sqlMeasurementInsert.lastInsertId());
 }
 
 bool Storage::insertData(const ProcessId &processId,
@@ -261,18 +265,16 @@ bool Storage::insertData(const ProcessId &processId,
                          const QList<SmapsRange> &ranges)
 {
   qlonglong measurementId = measurementHash(processId, time);
-  QSqlQuery sql(db);
-  sql.prepare("INSERT INTO `data` (`range_id`, `measurement_id`, `rss`, `pss`) VALUES (:range_id, :measurement_id, :rss, :pss)");
-  db.transaction();
-  for (const auto &m: ranges) {
-    sql.bindValue(":range_id", m.key.hash());
-    sql.bindValue(":measurement_id", measurementId);
-    sql.bindValue(":rss", qlonglong(m.rss));
-    sql.bindValue(":pss", qlonglong(m.pss));
 
-    sql.exec();
-    if (sql.lastError().isValid()) {
-      qWarning() << "Insert data failed" << sql.lastError();
+  for (const auto &m: ranges) {
+    sqlDataInsert.bindValue(":range_id", m.key.hash());
+    sqlDataInsert.bindValue(":measurement_id", measurementId);
+    sqlDataInsert.bindValue(":rss", qlonglong(m.rss));
+    sqlDataInsert.bindValue(":pss", qlonglong(m.pss));
+
+    sqlDataInsert.exec();
+    if (sqlDataInsert.lastError().isValid()) {
+      qWarning() << "Insert data failed" << sqlDataInsert.lastError();
       return false;
     }
   }
