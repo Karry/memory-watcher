@@ -28,7 +28,7 @@ Feeder::Feeder(std::atomic_int &queueSize):
 
 void Feeder::processInitialized(ProcessId processId,
                                 QString name) {
-  storage.insertProcess(processId, name);
+  storage.insertOrIgnoreProcess(processId, name);
 }
 
 void Feeder::onProcessSnapshot(QDateTime time,
