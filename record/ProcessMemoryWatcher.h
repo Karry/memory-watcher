@@ -56,7 +56,6 @@ public slots:
 public:
   ProcessMemoryWatcher(QThread *thread,
                        pid_t pid,
-                       std::atomic_int &queueSize,
                        QString procFs);
 
   virtual ~ProcessMemoryWatcher() = default;
@@ -83,6 +82,5 @@ private:
   QFileInfo oomScoreFile;
   QFileInfo oomScoreAdjFile;
   QString lastLineStart;
-  std::atomic_int &queueSize; // not owning reference
   bool accessible{true}; // false when smaps is not accessible (we don't have enough privileges)
 };

@@ -44,7 +44,6 @@ void Record::close()
     t->quit(); // thread is deleted on finish
   }
   watcherThreads.clear();
-  feeder->deleteLater();
   threadPool.close();
 }
 
@@ -52,7 +51,6 @@ Record::Record(QSet<long> pids,
                long period,
                QString databaseFile,
                QString procFs):
-  feeder(new Feeder(queueSize)),
   monitorSystem(pids.empty()),
   procFs(procFs)
 {
@@ -65,7 +63,7 @@ Record::Record(QSet<long> pids,
 
   timer.start();
 
-  if (!feeder->init(databaseFile)){
+  if (!feeder.init(databaseFile)){
     close();
     return;
   }
@@ -101,10 +99,10 @@ Record::~Record()
 void Record::startProcessMonitor(pid_t pid) {
   assert(!watcherThreads.empty());
   QThread *watcherThread = watcherThreads[ nextThread++ % watcherThreads.size()];
-  ProcessMemoryWatcher *watcher = new ProcessMemoryWatcher(watcherThread, pid, queueSize, procFs);
+  ProcessMemoryWatcher *watcher = new ProcessMemoryWatcher(watcherThread, pid, procFs);
 
   connect(watcher, &ProcessMemoryWatcher::snapshot,
-          feeder, &Feeder::onProcessSnapshot,
+          &feeder, &Feeder::onProcessSnapshot,
           Qt::QueuedConnection);
 
   connect(this, &Record::updateRequest,
@@ -112,7 +110,7 @@ void Record::startProcessMonitor(pid_t pid) {
           Qt::QueuedConnection);
 
   connect(watcher, &ProcessMemoryWatcher::initialized,
-          feeder, &Feeder::processInitialized,
+          &feeder, &Feeder::processInitialized,
           Qt::QueuedConnection);
 
   connect(watcher, &ProcessMemoryWatcher::initialized,
@@ -142,7 +140,7 @@ void Record::processInitialized(ProcessId processId, QString name) {
 void Record::processExited(ProcessId processId) {
   auto it = watchers.find(processId.pid);
   if (it != watchers.end()) {
-    qDebug() << "Process" << processId.pid << "terminated";
+    qDebug() << "Process" << processId.pid << "(hash" << processId.hash() << ") terminated";
     it.value()->deleteLater();
     watchers.remove(processId.pid);
   }
@@ -164,6 +162,7 @@ void Record::update() {
   if (monitorSystem) {
     updateProcessList();
   }
+  qDebug() << "tick, watching" << watchers.size() << "processes";
   emit updateRequest(QDateTime::currentDateTime());
 }
 
@@ -258,6 +257,7 @@ int main(int argc, char* argv[]) {
   Record *record = new Record(args.pids, args.period, args.databaseFile);
   std::function<void(int)> signalCallback = [&](int){
     Utils::cleanSignalCallback();
+    qDebug() << "closing";
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
     QMetaObject::invokeMethod(record, "close", Qt::QueuedConnection);
 #else
