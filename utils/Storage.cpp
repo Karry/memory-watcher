@@ -153,12 +153,25 @@ bool Storage::init(QString file)
     return false;
   }
   qDebug() << "Storage database opened:" << file;
+
+  // following pragmas speed up operations a bit, but are dangerous
+  // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+  if (QSqlQuery q = db.exec("PRAGMA synchronous = OFF;");
+      q.lastError().isValid()){
+    qWarning() << "Setup synchronous writes fails:" << q.lastError();
+  }
+
+  if (QSqlQuery q = db.exec("PRAGMA journal_mode = MEMORY;");
+      q.lastError().isValid()){
+    qWarning() << "Setup memory journal fails:" << q.lastError();
+  }
+
   if (!updateSchema()){
     return false;
   }
 
-  QSqlQuery q = db.exec("PRAGMA foreign_keys = ON;");
-  if (q.lastError().isValid()){
+  if (QSqlQuery q = db.exec("PRAGMA foreign_keys = ON;");
+      q.lastError().isValid()){
     qWarning() << "Enabling foreign keys fails:" << q.lastError();
   }
 
