@@ -38,6 +38,9 @@ void Utils::cleanSignalCallback()
   signalHandler = nullptr;
 }
 
+// TODO: it is not safe to do multiple operations from sigaction!
+// It may be invoked from any thread (that don't have blocked signals), at any time.
+// Even when mutexes are locked. sigwait with dedicated thread should be used instead.
 void Utils::catchUnixSignals(std::initializer_list<int> quitSignals,
                              std::function<void(int)> *delegateHandler) {
 
