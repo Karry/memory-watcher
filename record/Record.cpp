@@ -136,7 +136,7 @@ void Record::startProcessMonitor(pid_t pid) {
 }
 
 void Record::processInitialized(ProcessId processId, QString name) {
-  qDebug() << "Process" << processId.pid << "initilized:" << name;
+  qDebug() << "Process" << processId.pid << "(hash" << processId.hash() << ") initialized:" << name;
 }
 
 void Record::processExited(ProcessId processId) {
