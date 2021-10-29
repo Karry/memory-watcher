@@ -24,6 +24,7 @@
 #include "SmapsRange.h"
 #include "OomScore.h"
 #include "Utils.h"
+#include "MemInfo.h"
 
 #include <QtCore/QObject>
 #include <QSqlDatabase>
@@ -60,6 +61,8 @@ public:
                   const QList<SmapsRange> &ranges);
 
   bool insertData(const std::vector<MeasurementData> &measurements);
+
+  bool insertSystemMemInfo(const QDateTime &time, const MemInfo &memInfo);
 
   qint64 measurementCount();
 
@@ -100,5 +103,6 @@ private:
   QSqlQuery sqlRangeInsert;
   QSqlQuery sqlMeasurementInsert;
   QSqlQuery sqlDataInsert;
+  QSqlQuery sqlSystemInsert;
 };
 

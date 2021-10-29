@@ -135,6 +135,27 @@ bool Storage::updateSchema()
     }
   }
 
+  if (!tables.contains("system_memory")) {
+    QString sql("CREATE TABLE `system_memory`");
+    sql.append("(").append("`time` datetime NOT NULL ");
+    sql.append(",").append("`mem_total` INTEGER NOT NULL ");
+    sql.append(",").append("`mem_free` INTEGER NOT NULL ");
+    sql.append(",").append("`mem_available` INTEGER NOT NULL ");
+    sql.append(",").append("`buffers` INTEGER NOT NULL ");
+    sql.append(",").append("`cached` INTEGER NOT NULL ");
+    sql.append(",").append("`swap_cache` INTEGER NOT NULL ");
+    sql.append(",").append("`s_reclaimable` INTEGER NOT NULL ");
+
+    sql.append(");");
+
+    QSqlQuery q = db.exec(sql);
+    if (q.lastError().isValid()) {
+      qWarning() << "Creating data table failed" << q.lastError();
+      db.close();
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -196,6 +217,10 @@ bool Storage::init(QString file)
 
     sqlDataInsert = QSqlQuery(db);
     sqlDataInsert.prepare("INSERT INTO `data` (`range_id`, `measurement_id`, `rss`, `pss`) VALUES (:range_id, :measurement_id, :rss, :pss)");
+
+    sqlSystemInsert = QSqlQuery(db);
+    sqlSystemInsert.prepare("INSERT INTO `system_memory` (`time`, `mem_total`, `mem_free`, `mem_available`, `buffers`, `cached`, `swap_cache`, `s_reclaimable`"
+                            ") VALUES (:time, :mem_total, :mem_free, :mem_available, :buffers, :cached, :swap_cache, :s_reclaimable)");
   }
   return valid;
 }
@@ -290,6 +315,25 @@ bool Storage::insertData(const ProcessId &processId,
       qWarning() << "Insert data failed" << sqlDataInsert.lastError();
       return false;
     }
+  }
+
+  return true;
+}
+
+bool Storage::insertSystemMemInfo(const QDateTime &time, const MemInfo &memInfo) {
+  sqlSystemInsert.bindValue(":time", time);
+  sqlSystemInsert.bindValue(":mem_total", (qlonglong)memInfo.memTotal);
+  sqlSystemInsert.bindValue(":mem_free", (qlonglong)memInfo.memFree);
+  sqlSystemInsert.bindValue(":mem_available", (qlonglong)memInfo.memAvailable);
+  sqlSystemInsert.bindValue(":buffers", (qlonglong)memInfo.buffers);
+  sqlSystemInsert.bindValue(":cached", (qlonglong)memInfo.cached);
+  sqlSystemInsert.bindValue(":swap_cache", (qlonglong)memInfo.swapCache);
+  sqlSystemInsert.bindValue(":s_reclaimable", (qlonglong)memInfo.sReclaimable);
+
+  sqlSystemInsert.exec();
+  if (sqlSystemInsert.lastError().isValid()) {
+    qWarning() << "Insert data failed" << sqlSystemInsert.lastError();
+    return false;
   }
 
   return true;

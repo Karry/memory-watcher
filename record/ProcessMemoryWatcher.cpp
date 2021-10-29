@@ -32,11 +32,17 @@ namespace {
 
 size_t parseMemory(const QString &line) {
   QStringList arr = line.split(" ", SkipEmptyParts);
-  if (arr.size() == 3) {
-    return arr[1].toULongLong();
+  if (arr.size() != 3) {
+    qWarning() << "Can't parse memory line" << line;
+    return 0;
   }
-  qWarning() << "Can't parse memory line" << line;
-  return 0;
+  bool ok = true;
+  size_t val = arr[1].toULongLong(&ok);
+  if (!ok) {
+    qWarning() << "Can't parse memory line" << line;
+    return 0;
+  }
+  return val;
 }
 
 void parseRange(SmapsRange &range, const QString &line, const ProcessId &processId) {

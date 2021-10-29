@@ -1,6 +1,6 @@
 /*
   Memory watcher
-  Copyright (C) 2018 Lukas Karas <karas@avast.com>
+  Copyright (C) 2021 Lukas Karas <lukas.karas@centrum.cz>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,40 +16,28 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
 #pragma once
 
-#include "ProcessMemoryWatcher.h"
-
-#include <Storage.h>
+#include <Utils.h>
 #include <MemInfo.h>
 
-#include <QObject>
-#include <QMap>
+#include <QtCore/QObject>
+#include <QDateTime>
+#include <QFileInfo>
 
-#include <atomic>
-
-class Feeder : public QObject{
+class SystemMemoryWatcher: public QObject {
   Q_OBJECT
-  Q_DISABLE_COPY_MOVE(Feeder)
-
+  Q_DISABLE_COPY_MOVE(SystemMemoryWatcher)
 signals:
+  void systemSnapshot(QDateTime time, MemInfo memInfo);
 public slots:
-  void processInitialized(ProcessId processId, QString name);
-
-  void onProcessSnapshot(QDateTime time,
-                         ProcessId processId,
-                         QList<SmapsRange> ranges,
-                         StatM statm,
-                         OomScore oomScore);
-
-  void onSystemSnapshot(QDateTime time, MemInfo memInfo);
-
+  void update(QDateTime time);
 public:
-  Feeder() = default;
-  ~Feeder() = default;
+  explicit SystemMemoryWatcher(const QString &procFs);
 
-  bool init(QString file);
+  virtual ~SystemMemoryWatcher() = default;
 
 private:
-  Storage storage;
+  QFileInfo memInfoFile;
 };

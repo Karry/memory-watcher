@@ -18,18 +18,17 @@
 */
 
 #include "Utils.h"
+#include "MemInfo.h"
 
 #include <QCoreApplication>
 #include <QProcess>
 #include <QtGlobal>
 
 #include <initializer_list>
-#include <unordered_map>
 
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
-#include <QFileInfo>
 
 static std::function<void(int)> *signalHandler = nullptr;
 
@@ -253,4 +252,5 @@ void Utils::registerQtMetatypes() {
   qRegisterMetaType<ProcessId>("ProcessId");
   qRegisterMetaType<OomScore>("OomScore");
   qRegisterMetaType<QList<SmapsRange>>("QList<SmapsRange>");
+  qRegisterMetaType<MemInfo>("MemInfo");
 }
