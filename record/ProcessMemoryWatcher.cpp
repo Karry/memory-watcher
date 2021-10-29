@@ -67,9 +67,9 @@ ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
   smapsFile(QString("%1/%2/smaps").arg(procFs).arg(pid)),
   statmFile(QString("%1/%2/statm").arg(procFs).arg(pid)),
   statusFile(QString("%1/%2/status").arg(procFs).arg(pid)),
-  oomAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
-  oomScoreFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
-  oomScoreAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid))
+  oomAdjFile(QString("%1/%2/oom_adj").arg(procFs).arg(pid)),
+  oomScoreFile(QString("%1/%2/oom_score").arg(procFs).arg(pid)),
+  oomScoreAdjFile(QString("%1/%2/oom_score_adj").arg(procFs).arg(pid))
 {
   moveToThread(thread);
 }
