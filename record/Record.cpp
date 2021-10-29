@@ -258,7 +258,11 @@ int main(int argc, char* argv[]) {
   Record *record = new Record(args.pids, args.period, args.databaseFile);
   std::function<void(int)> signalCallback = [&](int){
     Utils::cleanSignalCallback();
-    record->close();
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+    QMetaObject::invokeMethod(record, "close", Qt::QueuedConnection);
+#else
+    QMetaObject::invokeMethod(record, &Record::close, Qt::QueuedConnection);
+#endif
   };
   Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
                           &signalCallback);
