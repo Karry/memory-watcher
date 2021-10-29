@@ -58,11 +58,10 @@ private:
 private:
   QTimer timer;
   ThreadPool threadPool;
-  std::atomic_int queueSize{0};
   std::vector<QThread*> watcherThreads;
   uint64_t nextThread{0};
   QMap<pid_t, ProcessMemoryWatcher *> watchers;
-  Feeder *feeder;
+  Feeder feeder;
   bool monitorSystem{false};
   QString procFs;
 

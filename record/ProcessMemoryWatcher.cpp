@@ -61,7 +61,6 @@ void parseRange(SmapsRange &range, const QString &line, const ProcessId &process
 
 ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
                                            pid_t pid,
-                                           std::atomic_int &queueSize,
                                            QString procFs):
   processId(pid, procFs),
   thread(thread),
@@ -70,8 +69,7 @@ ProcessMemoryWatcher::ProcessMemoryWatcher(QThread *thread,
   statusFile(QString("%1/%2/status").arg(procFs).arg(pid)),
   oomAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
   oomScoreFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
-  oomScoreAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid)),
-  queueSize(queueSize)
+  oomScoreAdjFile(QString("%1/%2/oom_").arg(procFs).arg(pid))
 {
   moveToThread(thread);
 }
@@ -196,11 +194,6 @@ void ProcessMemoryWatcher::update(QDateTime time)
     return;
   }
 
-  if (queueSize > 10000){
-    qWarning() << "Full Queue" << queueSize;
-    return;
-  }
-
   QList<SmapsRange> ranges;
   if (accessible) {
     if (!readSmaps(ranges)) {
@@ -215,7 +208,6 @@ void ProcessMemoryWatcher::update(QDateTime time)
 
   OomScore oomScore = readOomScore();
 
-  queueSize++;
   emit snapshot(time, processId, ranges, statm, oomScore);
 }
 

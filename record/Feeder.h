@@ -42,12 +42,11 @@ public slots:
                          OomScore oomScore);
 
 public:
-  explicit Feeder(std::atomic_int &queueSize);
+  Feeder() = default;
   ~Feeder() = default;
 
   bool init(QString file);
 
 private:
-  std::atomic_int &queueSize; // not owning reference
   Storage storage;
 };

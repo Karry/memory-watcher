@@ -21,11 +21,6 @@
 
 #include <QDebug>
 
-Feeder::Feeder(std::atomic_int &queueSize):
-  queueSize(queueSize)
-{
-}
-
 void Feeder::processInitialized(ProcessId processId,
                                 QString name) {
   storage.insertOrIgnoreProcess(processId, name);
@@ -37,8 +32,6 @@ void Feeder::onProcessSnapshot(QDateTime time,
                                StatM statm,
                                OomScore oomScore)
 {
-  queueSize--;
-
   storage.transaction();
 
   qlonglong rssSum = 0;
