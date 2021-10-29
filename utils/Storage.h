@@ -43,7 +43,7 @@ public:
   bool updateSchema();
   bool init(QString file);
 
-  bool insertProcess(const ProcessId &processId, const QString &name);
+  bool insertOrIgnoreProcess(const ProcessId &processId, const QString &name);
 
   qlonglong insertOrUpdateRange(const SmapsRange::Key &range);
 

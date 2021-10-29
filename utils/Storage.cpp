@@ -165,9 +165,9 @@ bool Storage::init(QString file)
   return db.isValid() && db.isOpen();
 }
 
-bool Storage::insertProcess(const ProcessId &processId, const QString &name) {
+bool Storage::insertOrIgnoreProcess(const ProcessId &processId, const QString &name) {
   QSqlQuery sql(db);
-  sql.prepare("INSERT INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
+  sql.prepare("INSERT OR IGNORE INTO `process` (`id`, `pid`, `start_time`, `name`) VALUES (:id, :pid, :start_time, :name)");
   sql.bindValue(":id", processId.hash());
   sql.bindValue(":pid", processId.pid);
   sql.bindValue(":start_time", processId.startTime);
