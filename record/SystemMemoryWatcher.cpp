@@ -76,6 +76,16 @@ void SystemMemoryWatcher::update(QDateTime time) {
       memInfo.cached = parseLine(line);
     } else if (line.startsWith("SwapCache:")) {
       memInfo.swapCache = parseLine(line);
+    } else if (line.startsWith("SwapTotal:")) {
+      memInfo.swapTotal = parseLine(line);
+    } else if (line.startsWith("SwapFree:")) {
+      memInfo.swapFree = parseLine(line);
+    } else if (line.startsWith("AnonPages:")) {
+      memInfo.anonPages = parseLine(line);
+    } else if (line.startsWith("Mapped:")) {
+      memInfo.mapped = parseLine(line);
+    } else if (line.startsWith("Shmem:")) {
+      memInfo.shmem = parseLine(line);
     } else if (line.startsWith("SReclaimable:")) {
       memInfo.sReclaimable = parseLine(line);
     }

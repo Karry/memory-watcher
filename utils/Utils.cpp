@@ -103,7 +103,7 @@ void Utils::printMeasurementSmapsLike(const Measurement &measurement)
   }
 }
 
-void Utils::group(MeasurementGroups &g, const Measurement &measurement, MemoryType type, bool groupSockets)
+void Utils::group(MeasurementGroups &g, const Measurement &measurement, ProcessMemoryType type, bool groupSockets)
 {
   g.threadStacks = 0;
   g.anonymous = 0;
@@ -170,10 +170,10 @@ std::vector<Mapping> MeasurementGroups::sortedMappings() const
   return sortedMappings;
 }
 
-void Utils::printMeasurement(const Measurement &measurement, MemoryType type)
+void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType type)
 {
   MeasurementGroups g;
-  MemoryType smapsType = type;
+  ProcessMemoryType smapsType = type;
   if (type == StatmRss){
     smapsType = Rss;
   }

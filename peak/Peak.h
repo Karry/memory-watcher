@@ -24,6 +24,8 @@
 #include <QObject>
 #include <QString>
 
+#include <optional>
+
 class Peak : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Peak)
@@ -33,11 +35,19 @@ public slots:
   void run();
 
 public:
-  Peak(const QString &db, MemoryType type);
-  ~Peak();
+  Peak(const QString &db,
+       std::optional<pid_t> pid,
+       std::optional<qulonglong> processId,
+       ProcessMemoryType type,
+       SystemMemoryType systemType);
+
+  virtual ~Peak();
 
 private:
   Storage storage;
   QString db;
-  MemoryType type{Rss};
+  std::optional<pid_t> pid;
+  std::optional<qulonglong> processId;
+  ProcessMemoryType processType{Rss};
+  SystemMemoryType systemType{MemAvailable};
 };

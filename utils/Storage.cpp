@@ -144,6 +144,11 @@ bool Storage::updateSchema()
     sql.append(",").append("`buffers` INTEGER NOT NULL ");
     sql.append(",").append("`cached` INTEGER NOT NULL ");
     sql.append(",").append("`swap_cache` INTEGER NOT NULL ");
+    sql.append(",").append("`swap_total` INTEGER NOT NULL ");
+    sql.append(",").append("`swap_free` INTEGER NOT NULL ");
+    sql.append(",").append("`anon_pages` INTEGER NOT NULL ");
+    sql.append(",").append("`mapped` INTEGER NOT NULL ");
+    sql.append(",").append("`shmem` INTEGER NOT NULL ");
     sql.append(",").append("`s_reclaimable` INTEGER NOT NULL ");
 
     sql.append(");");
@@ -219,8 +224,10 @@ bool Storage::init(QString file)
     sqlDataInsert.prepare("INSERT INTO `data` (`range_id`, `measurement_id`, `rss`, `pss`) VALUES (:range_id, :measurement_id, :rss, :pss)");
 
     sqlSystemInsert = QSqlQuery(db);
-    sqlSystemInsert.prepare("INSERT INTO `system_memory` (`time`, `mem_total`, `mem_free`, `mem_available`, `buffers`, `cached`, `swap_cache`, `s_reclaimable`"
-                            ") VALUES (:time, :mem_total, :mem_free, :mem_available, :buffers, :cached, :swap_cache, :s_reclaimable)");
+    sqlSystemInsert.prepare("INSERT INTO `system_memory` (`time`, `mem_total`, `mem_free`, `mem_available`, `buffers`, `cached`, `swap_cache`, "
+                            "   `swap_total`, `swap_free`, `anon_pages`, `mapped`, `shmem`, `s_reclaimable`"
+                            ") VALUES (:time, :mem_total, :mem_free, :mem_available, :buffers, :cached, :swap_cache, "
+                            "   :swap_total, :swap_free, :anon_pages, :mapped, :shmem, :s_reclaimable)");
   }
   return valid;
 }
@@ -279,7 +286,7 @@ qlonglong Storage::insertMeasurement(const ProcessId &processId,
 
   sqlMeasurementInsert.bindValue(":oom_adj", oomScore.adj);
   sqlMeasurementInsert.bindValue(":oom_score", oomScore.score);
-  sqlMeasurementInsert.bindValue(":oom_score_adj", oomScore.score_adj);
+  sqlMeasurementInsert.bindValue(":oom_score_adj", oomScore.scoreAdj);
 
   sqlMeasurementInsert.bindValue(":statm_size", (qlonglong)statm.size);
   sqlMeasurementInsert.bindValue(":statm_resident", (qlonglong)statm.resident);
@@ -328,6 +335,11 @@ bool Storage::insertSystemMemInfo(const QDateTime &time, const MemInfo &memInfo)
   sqlSystemInsert.bindValue(":buffers", (qlonglong)memInfo.buffers);
   sqlSystemInsert.bindValue(":cached", (qlonglong)memInfo.cached);
   sqlSystemInsert.bindValue(":swap_cache", (qlonglong)memInfo.swapCache);
+  sqlSystemInsert.bindValue(":swap_total", (qlonglong)memInfo.swapTotal);
+  sqlSystemInsert.bindValue(":swap_free", (qlonglong)memInfo.swapFree);
+  sqlSystemInsert.bindValue(":anon_pages", (qlonglong)memInfo.anonPages);
+  sqlSystemInsert.bindValue(":mapped", (qlonglong)memInfo.mapped);
+  sqlSystemInsert.bindValue(":shmem", (qlonglong)memInfo.shmem);
   sqlSystemInsert.bindValue(":s_reclaimable", (qlonglong)memInfo.sReclaimable);
 
   sqlSystemInsert.exec();
@@ -339,7 +351,7 @@ bool Storage::insertSystemMemInfo(const QDateTime &time, const MemInfo &memInfo)
   return true;
 }
 
-bool Storage::getRanges(QMap<qlonglong, Range> &rangeMap, QSqlQuery &sql)
+bool Storage::getRanges(QMap<qulonglong, Range> &rangeMap, QSqlQuery &sql)
 {
   sql.exec();
   if (sql.lastError().isValid()) {
@@ -353,16 +365,17 @@ bool Storage::getRanges(QMap<qlonglong, Range> &rangeMap, QSqlQuery &sql)
     range.to = varToLong(sql.value("to"));
     range.permission = varToString(sql.value("permission"));
     range.name = varToString(sql.value("name"));
-    rangeMap[varToLong(sql.value("id"))] = range;
+    rangeMap[varToULong(sql.value("id"))] = range;
   }
   return true;
 }
 
-bool Storage::getAllRanges(QMap<qlonglong, Range> &rangeMap)
+bool Storage::getAllRanges(qulonglong processId, QMap<qulonglong, Range> &rangeMap)
 {
   QSqlQuery sql(db);
 
-  sql.prepare("SELECT * FROM `range`;");
+  sql.prepare("SELECT * FROM `memory_range` WHERE process_id = :process_id;");
+  sql.bindValue(":process_id", processId);
   return getRanges(rangeMap, sql);
 }
 
@@ -377,8 +390,13 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
     qWarning() << "No measurement found";
     return false;
   }
-  measurement.id = varToLong(measurementQuery.value("id"));
+  measurement.id = varToULong(measurementQuery.value("id"));
+  measurement.processId = varToULong(measurementQuery.value("process_id"));
   measurement.time = varToDateTime(measurementQuery.value("time"));
+
+  measurement.oomScore.adj = varToLong(measurementQuery.value("oom_adj"));
+  measurement.oomScore.score = varToLong(measurementQuery.value("oom_score"));
+  measurement.oomScore.scoreAdj = varToLong(measurementQuery.value("oom_score_adj"));
 
   measurement.statm.size = varToLong(measurementQuery.value("statm_size"));
   measurement.statm.resident = varToLong(measurementQuery.value("statm_resident"));
@@ -393,11 +411,11 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   // ranges
   if (cacheRanges){
     if (measurement.rangeMap.empty()){
-      getAllRanges(measurement.rangeMap);
+      getAllRanges(measurement.processId, measurement.rangeMap);
     }
   }else {
     sql.prepare(
-      "SELECT * FROM `range` WHERE `id` IN (SELECT `range_id` FROM `data` WHERE `measurement_id` = :measurement_id);");
+      "SELECT * FROM `memory_range` WHERE `id` IN (SELECT `range_id` FROM `data` WHERE `measurement_id` = :measurement_id);");
     sql.bindValue(":measurement_id", measurement.id);
 
     measurement.rangeMap.clear();
@@ -418,7 +436,7 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   measurement.data.clear();
   while (sql.next()) {
     MeasurementData data;
-    data.rangeId = varToLong(sql.value("range_id"));;
+    data.rangeId = varToULong(sql.value("range_id"));;
     data.rss = varToLong(sql.value("rss"));
     data.pss = varToLong(sql.value("pss"));
     measurement.data << data;
@@ -427,18 +445,57 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   return true;
 }
 
-bool Storage::getMemoryPeak(Measurement &measurement, MemoryType type, qint64 from, qint64 to)
+bool Storage::lookupPid(pid_t pid, QMap<ProcessId, QString> &processes) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `process` WHERE pid = :pid;");
+
+  sql.bindValue(":pid", pid);
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select of process failed" << sql.lastError();
+    return false;
+  }
+  while (sql.next()) {
+    ProcessId::StartTime startTime = varToULong(sql.value("start_time"));
+    processes[ProcessId(pid, startTime)] = varToString(sql.value("name"));
+  }
+  return true;
+}
+
+bool Storage::getProcess(qulonglong processId, pid_t &pid, QString &processName) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `process` WHERE id = :id;");
+
+  sql.bindValue(":id", processId);
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select of process failed" << sql.lastError();
+    return false;
+  }
+  if (!sql.next()) {
+    return false;
+  }
+  pid = varToULong(sql.value("pid"));
+  processName = varToString(sql.value("name"));
+  return true;
+}
+
+bool Storage::getMemoryPeak(qulonglong processId, Measurement &measurement, ProcessMemoryType type, qint64 from, qint64 to)
 {
   QSqlQuery sql(db);
 
   // measurement
   if (type == Rss) {
-    sql.prepare("SELECT * FROM `measurement` WHERE rss_sum = (SELECT MAX(rss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
+    sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND rss_sum = ")
+                .append("(SELECT MAX(rss_sum) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
   }else if (type == StatmRss){
-    sql.prepare("SELECT * FROM `measurement` WHERE statm_resident = (SELECT MAX(statm_resident) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
+    sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND statm_resident = ")
+                .append("(SELECT MAX(statm_resident) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
   }else{
-    sql.prepare("SELECT * FROM `measurement` WHERE pss_sum = (SELECT MAX(pss_sum) FROM `measurement` WHERE `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;");
+    sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND pss_sum = ")
+                .append("(SELECT MAX(pss_sum) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
   }
+  sql.bindValue(":process_id", processId);
   sql.bindValue(":from", from);
   sql.bindValue(":to", to);
   return getMeasurement(measurement, sql);

@@ -52,19 +52,26 @@ struct Range {
 };
 
 struct Measurement {
-  qlonglong id{0};
+  qulonglong id{0};
+  qulonglong processId{0};
   QDateTime time;
+  OomScore oomScore;
   StatM statm;
-  QMap<qlonglong, Range> rangeMap;
+  QMap<qulonglong, Range> rangeMap;
   QList<MeasurementData> data;
 };
 
-enum MemoryType {
+enum ProcessMemoryType {
   // SMaps
   Rss,
   Pss,
   // statm
   StatmRss
+};
+
+enum SystemMemoryType {
+  MemAvailable, // Kernel estimate how much memory is available before system start swapping.
+  MemAvailableComputed // MemFree + Buffers + (Cached - Shmem) + SwapCache + SReclaimable.
 };
 
 struct Mapping {
@@ -95,8 +102,8 @@ public:
   static void cleanSignalCallback();
 
   static void printMeasurementSmapsLike(const Measurement &measurement);
-  static void group(MeasurementGroups &g, const Measurement &measurement, MemoryType type, bool groupSockets = false);
-  static void printMeasurement(const Measurement &measurement, MemoryType type);
+  static void group(MeasurementGroups &g, const Measurement &measurement, ProcessMemoryType type, bool groupSockets = false);
+  static void printMeasurement(const Measurement &measurement, ProcessMemoryType type);
   static void clearScreen();
   static void registerQtMetatypes();
 };

@@ -66,8 +66,13 @@ public:
 
   qint64 measurementCount();
 
-  bool getMemoryPeak(Measurement &measurement,
-                     MemoryType type = Rss,
+  bool lookupPid(pid_t pid, QMap<ProcessId, QString> &processes);
+
+  bool getProcess(qulonglong processId, pid_t &pid, QString &processName);
+
+  bool getMemoryPeak(qulonglong processId,
+                     Measurement &measurement,
+                     ProcessMemoryType type = Rss,
                      qint64 from = std::numeric_limits<qint64>::min(),
                      qint64 to = std::numeric_limits<qint64>::max());
 
@@ -76,7 +81,7 @@ public:
   bool getMeasuremntRange(qlonglong &min,
                           qlonglong &max);
 
-  bool getAllRanges(QMap<qlonglong, Range> &rangeMap);
+  bool getAllRanges(qulonglong processId, QMap<qulonglong, Range> &rangeMap);
 
   bool transaction()
   {
@@ -95,7 +100,7 @@ public:
 
 private:
   bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
-  bool getRanges(QMap<qlonglong, Range> &rangeMap, QSqlQuery &sql);
+  bool getRanges(QMap<qulonglong, Range> &rangeMap, QSqlQuery &sql);
 
 private:
   QSqlDatabase db;

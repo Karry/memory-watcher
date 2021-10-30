@@ -42,7 +42,7 @@ public:
 
 private:
   QTimer timer;
-  MemoryType type{Rss};
+  ProcessMemoryType type{Rss};
   Storage storage;
   Measurement measurement;
   QString db;

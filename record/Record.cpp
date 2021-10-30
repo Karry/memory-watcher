@@ -51,8 +51,8 @@ Record::Record(QSet<long> pids,
                long period,
                QString databaseFile,
                QString procFs):
-  monitorSystem(pids.empty()),
   systemMemoryWatcher(procFs),
+  monitorSystem(pids.empty()),
   procFs(procFs)
 {
   connect(&threadPool, &ThreadPool::closed, this, &Record::deleteLater);
