@@ -29,7 +29,6 @@
 #include <QChart>
 #include <QChartView>
 #include <QAreaSeries>
-#include <QCategoryAxis>
 #include <QFileInfo>
 #include <QElapsedTimer>
 
@@ -73,7 +72,7 @@ void Chart::run()
   }
 
   // chart configuration
-  MemoryType type = MemoryType::Rss;
+  ProcessMemoryType type = ProcessMemoryType::Rss;
 
   qint64 measurementFrom = 0;
   qint64 measurementTo = storage.measurementCount();
@@ -99,7 +98,8 @@ void Chart::run()
   MeasurementGroups peak;
   for (qint64 step = 0; step < pointCount; step ++){
     Measurement measurement;
-    storage.getMemoryPeak(measurement, type,
+    // TODO: update to new storage model
+    storage.getMemoryPeak(0, measurement, type,
       measurementFrom + step * stepSize,
       measurementFrom + (step * stepSize) + stepSize);
 

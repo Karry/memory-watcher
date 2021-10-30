@@ -22,5 +22,5 @@
 struct OomScore {
   int adj{0}; // value from /proc/<pid>/oom_adj
   int score{0}; // value from /proc/<pid>/oom_score
-  int score_adj{0}; // value from /proc/<pid>/oom_score_adj
+  int scoreAdj{0}; // value from /proc/<pid>/oom_score_adj
 };

@@ -21,17 +21,99 @@
 
 #include <Utils.h>
 #include <ThreadPool.h>
+#include <CmdLineParsing.h>
+#include <Version.h>
 
 #include <QtCore/QCoreApplication>
 #include <QDebug>
 #include <QFileInfo>
 
 #include <iostream>
-#include <unordered_map>
-#include <signal.h>
+#include <optional>
 
-Peak::Peak(const QString &db, MemoryType type):
-  db(db), type(type)
+struct Arguments {
+  bool help{false};
+  bool version{false};
+  std::optional<long> pid;
+  std::optional<qulonglong> processId;
+  QString databaseFile;
+  QString processMemoryType{"pss"};
+  QString systemMemoryType{"MemAvailable"};
+};
+
+class ArgParser: public CmdLineParser {
+private:
+  Arguments args;
+
+public:
+  ArgParser(QCoreApplication *app,
+            int argc, char *argv[])
+    : CmdLineParser(app->applicationName().toStdString(), argc, argv) {
+
+    using namespace std::string_literals;
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.help = value;
+              }),
+              std::vector<std::string>{"h", "help"},
+              "Display help and exits",
+              true);
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.version = value;
+              }),
+              std::vector<std::string>{"v", "version"},
+              "Display application version and exits",
+              false);
+
+    AddOption(CmdLineULongOption([this](const unsigned long &value) {
+                args.pid = value;
+              }),
+              std::vector<std::string>{"p","pid"},
+              "Pid of analyzed process. "s +
+              "If not defined, system wide statistics are displayed."s);
+
+    AddOption(CmdLineULongOption([this](const qulonglong &value) {
+                args.processId = value;
+              }),
+              "process-id",
+              "Internal process id (may be used in case that pid is not unique)"s);
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.databaseFile = QString::fromStdString(value);
+              }),
+              "database-file",
+              "Sqlite database file with recording. Default is measurement.db");
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.processMemoryType = QString::fromStdString(value);
+              }),
+              "process-memory",
+              "Type of process memory used for sorting."s
+              "\n\tpss (default) - Proportional set size as sum of pss values from /proc/[pid]/smaps"s
+              "\n\trss - Resident set size as sum of rss values from /proc/[pid]/smaps"s
+              "\n\tstatm - Resident set size as provided in /proc/[pid]/statm");
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.systemMemoryType = QString::fromStdString(value);
+              }),
+              "system-memory",
+              "Type of system memory used for sorting (when system-wide statistic is used)."s
+              "\n\tMemAvailable (default) - Kernel estimate how much memory is available before system start swapping."s
+              "\n\tMemAvailableComputed - It means: MemFree + Buffers + (Cached - Shmem) + SwapCache + SReclaimable."s);
+  }
+
+  Arguments GetArguments() const {
+    return args;
+  }
+};
+
+Peak::Peak(const QString &db,
+           std::optional<pid_t> pid,
+           std::optional<qulonglong> processId,
+           ProcessMemoryType processType,
+           SystemMemoryType systemType):
+  db(db), pid(pid), processId(processId), processType(processType), systemType(systemType)
 {}
 
 Peak::~Peak()
@@ -52,55 +134,115 @@ void Peak::run()
     return;
   }
 
-  Measurement measurement;
-  if (!storage.getMemoryPeak(measurement, type)){
-    qWarning() << "Failed to read memory peak";
-    deleteLater();
-    return;
-  }
+  if (pid.has_value() || processId.has_value()) {
+    if (!processId.has_value()) {
+      using ProcessMap = QMap<ProcessId, QString>;
+      ProcessMap processes;
+      storage.lookupPid(pid.value(), processes);
+      if (processes.empty()) {
+        qWarning() << "Cannot found pid" << pid.value();
+        deleteLater();
+        return;
+      }
+      if (processes.size() > 1) {
+        std::cerr << "Not unique pid " << pid.value() << ", try to use --process-id argument." << std::endl;
+        std::cout << "ProcessId\tname:" << std::endl;
+        for (ProcessMap::const_iterator it = processes.cbegin(); it != processes.cend(); ++it) {
+          std::cout << it.key().hash() << '\t' << it.value().toStdString() << std::endl;
+        }
+        deleteLater();
+        return;
+      }
+      processId = processes.firstKey().hash();
+    }
 
-  // Utils::printMeasurementSmapsLike(measurement);
-  // std::cout << std::endl << std::endl;
-  Utils::printMeasurement(measurement, type);
+    {
+      pid_t pid;
+      QString processName;
+      if (!storage.getProcess(processId.value(), pid, processName)) {
+        qWarning() << "Failed to read memory peak";
+        deleteLater();
+        return;
+      }
+      std::cout << "pid:              " << pid << std::endl;
+      std::cout << "process id:       " << processId.value() << std::endl;
+      std::cout << "process name:     " << processName.toStdString() << std::endl;
+    }
+
+    Measurement measurement;
+    if (!storage.getMemoryPeak(processId.value(), measurement, processType)) {
+      qWarning() << "Failed to read memory peak";
+      deleteLater();
+      return;
+    }
+
+    // Utils::printMeasurementSmapsLike(measurement);
+    // std::cout << std::endl << std::endl;
+    Utils::printMeasurement(measurement, processType);
+  } else {
+    // TODO
+    qWarning() << "Not implemented";
+  }
 
   deleteLater();
 }
 
-QMap<QString, MemoryType> memoryTypes{
-  {"rss", MemoryType::Rss},
-  {"pss", MemoryType::Pss},
-  {"statm", MemoryType::StatmRss},
+QMap<QString, ProcessMemoryType> memoryTypes {
+  {"rss",   ProcessMemoryType::Rss},
+  {"pss",   ProcessMemoryType::Pss},
+  {"statm", ProcessMemoryType::StatmRss},
+};
+
+QMap<QString, SystemMemoryType> sysMemoryTypes {
+  {"MemAvailable", SystemMemoryType::MemAvailable},
+  {"MemAvailableComputed", SystemMemoryType::MemAvailableComputed},
 };
 
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
+  Utils::registerQtMetatypes();
 
-  if (app.arguments().size() >= 2 && (app.arguments()[1] == "--help" || app.arguments()[1] == "-h")){
-    std::cerr << "Usage:" << std::endl;
-    std::cerr << app.applicationName().toStdString() << " [database-file] [memory-type]" << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "  default database file is measurement.db" << std::endl;
-    std::cerr << "  default memory type is rss. Possibilities:";
-    for (const auto &memType : memoryTypes.keys()){
-      std::cerr << " " << memType.toStdString();
-    }
-    std::cerr << std::endl;
-    return 1;
-  }
+  Arguments args;
+  {
+    ArgParser argParser(&app, argc, argv);
 
-  QString db = app.arguments().size() > 1 ? app.arguments()[1] : "measurement.db";
-
-  MemoryType type{Rss};
-  if (app.arguments().size() > 2){
-    QString typeStr = app.arguments()[2].toLower();
-    if (!memoryTypes.contains(typeStr)){
-      qWarning() << "Dont understand to memory type" << typeStr;
+    CmdLineParseResult argResult = argParser.Parse();
+    if (argResult.HasError()) {
+      std::cerr << "ERROR: " << argResult.GetErrorDescription() << std::endl;
+      std::cout << argParser.GetHelp() << std::endl;
       return 1;
     }
-    type = memoryTypes[typeStr];
+
+    args = argParser.GetArguments();
+    if (args.help) {
+      std::cout << argParser.GetHelp() << std::endl;
+      return 0;
+    }
+    if (args.version) {
+      std::cout << MEMORY_WATCHER_VERSION_STRING << std::endl;
+      return 0;
+    }
   }
 
-  Peak *peak = new Peak(db, type);
+  if (args.databaseFile.isEmpty()) {
+    args.databaseFile = QString("measurement.db");
+  }
+
+  ProcessMemoryType processType{Rss};
+  if (!memoryTypes.contains(args.processMemoryType)){
+    qWarning() << "Dont understand to memory type" << args.processMemoryType;
+    return 1;
+  }
+  processType = memoryTypes[args.processMemoryType];
+
+  SystemMemoryType systemType{MemAvailable};
+  if (!sysMemoryTypes.contains(args.systemMemoryType)){
+    qWarning() << "Dont understand to memory type" << args.systemMemoryType;
+    return 1;
+  }
+  systemType = sysMemoryTypes[args.systemMemoryType];
+
+  Peak *peak = new Peak(args.databaseFile, args.pid, args.processId, processType, systemType);
   QMetaObject::invokeMethod(peak, "run", Qt::QueuedConnection);
 
   int result = app.exec();

@@ -31,6 +31,13 @@ inline qlonglong varToLong(const QVariant &var, qlonglong def = -1)
   return ok ? val : def;
 }
 
+inline qulonglong varToULong(const QVariant &var, qulonglong def = 0)
+{
+  bool ok;
+  qulonglong val = var.toULongLong(&ok);
+  return ok ? val : def;
+}
+
 inline QString varToString(const QVariant &var, QString def = "")
 {
   if (!var.isNull() &&
