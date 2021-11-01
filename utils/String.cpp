@@ -23,6 +23,8 @@
 #include <cstring>
 #include <sstream>
 #include <thread>
+#include <cmath>
+#include <iomanip>
 
 bool GetDigitValue(char digit, size_t& result)
 {
@@ -133,4 +135,32 @@ bool StringToNumber(const std::string& string, double& value)
   return stream.eof();
 }
 
+std::string ByteSizeToString(double value)
+{
+  std::stringstream buffer;
 
+  buffer.setf(std::ios::fixed);
+  buffer << std::setprecision(1);
+
+  if (value<1.0 && value>-1) {
+    buffer << "0 B";
+  }
+  else if (ceil(value)>=1024.0*1024*1024*1024) {
+    buffer << value/(1024.0*1024*1024*1024) << " TiB";
+  }
+  else if (ceil(value)>=1024.0*1024*1024) {
+    buffer << value/(1024.0*1024*1024) << " GiB";
+  }
+  else if (ceil(value)>=1024.0*1024) {
+    buffer << value/(1024.0*1024) << " MiB";
+  }
+  else if (ceil(value)>=1024.0) {
+    buffer << value/1024.0 << " KiB";
+  }
+  else {
+    buffer << std::setprecision(0);
+    buffer << value << " B";
+  }
+
+  return buffer.str();
+}

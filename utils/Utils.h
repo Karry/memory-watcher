@@ -23,6 +23,7 @@
 #include "ProcessId.h"
 #include "OomScore.h"
 #include "SmapsRange.h"
+#include "MemInfo.h"
 
 #include <QDateTime>
 #include <QThread>
@@ -54,6 +55,8 @@ struct Range {
 struct Measurement {
   qulonglong id{0};
   qulonglong processId{0};
+  pid_t pid;
+  QString processName;
   QDateTime time;
   OomScore oomScore;
   StatM statm;
@@ -104,6 +107,9 @@ public:
   static void printMeasurementSmapsLike(const Measurement &measurement);
   static void group(MeasurementGroups &g, const Measurement &measurement, ProcessMemoryType type, bool groupSockets = false);
   static void printMeasurement(const Measurement &measurement, ProcessMemoryType type);
+  static void printProcesses(const QDateTime &time,
+                             const MemInfo &memInfo, SystemMemoryType systemType,
+                             const QList<Measurement> &processes, ProcessMemoryType processType);
   static void clearScreen();
   static void registerQtMetatypes();
 };

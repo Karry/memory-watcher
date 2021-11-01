@@ -19,6 +19,7 @@
 
 #include "Utils.h"
 #include "MemInfo.h"
+#include "String.h"
 
 #include <QCoreApplication>
 #include <QProcess>
@@ -29,6 +30,30 @@
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+
+namespace {
+struct ProcessMemory {
+  ProcessMemory(const Measurement &m, ProcessMemoryType type):
+    m(m) {
+    if (type == StatmRss) {
+      memory = m.statm.resident;
+    } else if (type == Pss) {
+      for (auto const &d : m.data) {
+        memory += d.pss;
+      }
+    } else {
+      assert(type == Rss);
+      for (auto const &d : m.data) {
+        memory += d.rss;
+      }
+    }
+  }
+  size_t memory{0};
+  Measurement m;
+};
+} // namespace
 
 static std::function<void(int)> *signalHandler = nullptr;
 
@@ -181,6 +206,10 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
 
   constexpr int indent = 80;
 
+  std::cout << "pid:              " << measurement.pid << std::endl;
+  std::cout << "process id:       " << measurement.processId << std::endl;
+  std::cout << "process name:     " << measurement.processName.toStdString() << std::endl;
+
   std::cout << "measurement:      " << measurement.id << std::endl;
 
 #if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
@@ -238,6 +267,91 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
 
   std::cout << std::endl;
   std::cout << "sum:              " << align(g.sum, indent) << " Ki" << std::endl;
+}
+
+void Utils::printProcesses(const QDateTime &time,
+                           const MemInfo &memInfo, SystemMemoryType systemType,
+                           const QList<Measurement> &processes, ProcessMemoryType processType) {
+  using namespace std::string_literals;
+
+  std::cout << "Memory peak at ";
+#if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
+  std::cout << time.toString(Qt::ISODateWithMs).toStdString();
+#else
+  std::cout << time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString();
+#endif
+  std::cout << " (" << (systemType == MemAvailable ? "estimated by kernel" : "computed") << ")" << std::endl;
+
+  auto f = [](size_t s) -> std::string {
+    return ByteSizeToString(double(s) * 1024);
+  };
+
+  auto p = [](double val, double sum) -> std::string {
+    if (sum <= 0) {
+      return "0 %"s;
+    }
+    std::stringstream buffer;
+    buffer.setf(std::ios::fixed);
+    buffer << std::setprecision(0);
+    buffer << ((val / sum) * 100) << "%";
+    return buffer.str();
+  };
+
+  std::cout << "Memory details: " << f(memInfo.memTotal) << " total, " << f(memInfo.memFree) << " free, "
+            << f(memInfo.buffers) << " buffers, " << f(memInfo.cached) << " cached (including shmem)" << std::endl;
+  std::cout << "                " << f(memInfo.swapCache) << " swap cache, " << f(memInfo.sReclaimable) << " SLAB reclaimable "
+            << f(memInfo.shmem) << " shmem (tmpfs, zram?)" << std::endl;
+  std::cout << "Swap:           " << f(memInfo.swapTotal) << " total, " << f(memInfo.swapFree) << " free (" << p(memInfo.swapFree, memInfo.swapTotal) << ")"<< std::endl;
+  std::cout << "Available:      " << f(memInfo.memAvailable) << " (" << p(memInfo.memAvailable, memInfo.memTotal) << ") estimated by kernel" << std::endl;
+  size_t computedAvailable = memInfo.memFree + memInfo.buffers + (memInfo.cached - memInfo.shmem) + memInfo.swapCache + memInfo.sReclaimable;
+  std::cout << "                " << f(computedAvailable) << " (" << p(computedAvailable, memInfo.memTotal) << ")"
+            << " computed. It means: MemFree + Buffers + (Cached - Shmem) + SwapCache + SReclaimable" << std::endl;
+
+
+  std::cout << std::endl;
+  std::cout << "Processes memory (" << (processType == StatmRss? "statm RSS" :(processType == Rss ? "smaps Rss" : "smaps Pss")) << "):" << std::endl;
+  std::cout << std::endl;
+  std::cout << "    PID process                                                             size (% of total)" << std::endl;
+
+  std::vector<ProcessMemory> procMem;
+  procMem.reserve(processes.size());
+  for (const auto &p: processes) {
+    procMem.emplace_back(p, processType);
+  }
+  std::sort(procMem.begin(), procMem.end(), [](const auto &a, const auto &b) {
+    return a.memory > b.memory;
+  });
+
+  auto printProcess = [&](const std::string &pidStr, const std::string &name, size_t memory) {
+    for (int i = 7 - pidStr.size(); i > 0; i--) {
+      std::cout << " ";
+    }
+    std::cout << pidStr << " " << name;
+    for (int i = 60 - name.size(); i > 0; i--) {
+      std::cout << " ";
+    }
+    auto sizeStr = f(memory);
+    for (int i = 12 - sizeStr.size(); i > 0; i--) {
+      std::cout << " ";
+    }
+    std::cout << sizeStr << " (" << p(memory, memInfo.memTotal) << ")" << std::endl;
+  };
+
+  int i = 0;
+  size_t otherSize = 0;
+  size_t sumSize = 0;
+  for (auto const &proc: procMem) {
+    if (i < 30) {
+      printProcess(std::to_string(proc.m.pid), proc.m.processName.toStdString(), proc.memory);
+    } else {
+      otherSize += proc.memory;
+    }
+    sumSize += proc.memory;
+    i++;
+  }
+  std::cout << std::endl;
+  printProcess("", "others", otherSize);
+  printProcess("", "sum", sumSize);
 }
 
 void Utils::clearScreen()
