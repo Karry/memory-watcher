@@ -279,3 +279,5 @@ extern bool StringToNumber(const char* string, double& value);
  * \ingroup Util
  */
 extern bool StringToNumber(const std::string& string, double& value);
+
+extern std::string ByteSizeToString(double size);

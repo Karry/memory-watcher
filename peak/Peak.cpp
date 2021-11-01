@@ -156,19 +156,6 @@ void Peak::run()
       processId = processes.firstKey().hash();
     }
 
-    {
-      pid_t pid;
-      QString processName;
-      if (!storage.getProcess(processId.value(), pid, processName)) {
-        qWarning() << "Failed to read memory peak";
-        deleteLater();
-        return;
-      }
-      std::cout << "pid:              " << pid << std::endl;
-      std::cout << "process id:       " << processId.value() << std::endl;
-      std::cout << "process name:     " << processName.toStdString() << std::endl;
-    }
-
     Measurement measurement;
     if (!storage.getMemoryPeak(processId.value(), measurement, processType)) {
       qWarning() << "Failed to read memory peak";
@@ -180,8 +167,18 @@ void Peak::run()
     // std::cout << std::endl << std::endl;
     Utils::printMeasurement(measurement, processType);
   } else {
-    // TODO
-    qWarning() << "Not implemented";
+    QDateTime time;
+    QList<Measurement> processes;
+    MemInfo memInfo;
+    if (!storage.getSystemMemoryPeak(systemType, time, memInfo, processes)) {
+      qWarning() << "Failed to read memory peak";
+      deleteLater();
+      return;
+    }
+
+    // Utils::printMeasurementSmapsLike(measurement);
+    // std::cout << std::endl << std::endl;
+    Utils::printProcesses(time, memInfo, systemType, processes, processType);
   }
 
   deleteLater();

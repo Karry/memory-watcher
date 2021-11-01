@@ -78,6 +78,11 @@ public:
 
   bool getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges = false);
 
+  bool getSystemMemoryPeak(SystemMemoryType memoryType,
+                           QDateTime &time,
+                           MemInfo &memInfo,
+                           QList<Measurement> &processes);
+
   bool getMeasuremntRange(qlonglong &min,
                           qlonglong &max);
 
@@ -99,6 +104,7 @@ public:
   }
 
 private:
+  bool execAndGetMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
   bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
   bool getRanges(QMap<qulonglong, Range> &rangeMap, QSqlQuery &sql);
 
