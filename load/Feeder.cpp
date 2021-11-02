@@ -25,6 +25,8 @@ void Feeder::onSnapshot(ProcessId processId, QDateTime time, QList<SmapsRange> r
 {
   storage.transaction();
 
+  storage.insertOrIgnoreProcess(processId, "foo");
+
   qlonglong rssSum = 0;
   qlonglong pssSum = 0;
   for (const auto &r:ranges){

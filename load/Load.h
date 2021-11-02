@@ -41,8 +41,6 @@ public:
   ~Load();
 
 private:
-  ThreadPool threadPool;
-  QThread *loaderThread;
   MemoryLoader *loader;
   Feeder *feeder;
 

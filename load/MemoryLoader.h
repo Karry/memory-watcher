@@ -43,19 +43,14 @@ public slots:
   void update();
 
 public:
-  MemoryLoader(QThread *thread,
-               pid_t pid,
-               const QString &smapsFile);
+  MemoryLoader(pid_t pid, const QString &smapsFile);
 
-  ~MemoryLoader();
+  virtual ~MemoryLoader() = default;
 
 private:
   bool readSmaps(QList<SmapsRange> &ranges);
 
-
 private:
-  QTimer timer;
-  QThread *thread;
   QFileInfo smapsFile;
   QString lastLineStart;
   ProcessId processId;
