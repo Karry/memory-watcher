@@ -95,23 +95,13 @@ void Utils::catchUnixSignals(std::initializer_list<int> quitSignals,
     sigaction(sig, &sa, nullptr);
 }
 
-
-QString printWithSeparator(size_t n)
+std::string printWithSeparator(size_t n)
 {
   if (n < 1000) {
-    return QString::asprintf("%d", (int)n);
+    return QString::asprintf("%d", (int)n).toStdString();
   }
   return printWithSeparator(n / 1000) +
-         QString::asprintf(" %03d", (int)(n % 1000));
-}
-
-std::string align(size_t mem, int size = 9)
-{
-  QString str = printWithSeparator(mem);
-  while (size - str.size() > 0) {
-    str = " " + str;
-  }
-  return str.toStdString();
+         QString::asprintf(" %03d", (int)(n % 1000)).toStdString();
 }
 
 void Utils::printMeasurementSmapsLike(const Measurement &measurement)
@@ -119,9 +109,9 @@ void Utils::printMeasurementSmapsLike(const Measurement &measurement)
   for (const auto &d: measurement.data) {
     const Range &r = measurement.rangeMap[d.rangeId];
 
-    std::cout << "Size: " << align((r.to - r.from) / 1024, 12) << " Ki "
-              << "Rss: " << align(d.rss) << " Ki "
-              << "Pss: " << align(d.pss) << " Ki : "
+    std::cout << "Size: " << std::setw(8) << std::right << printWithSeparator((r.to - r.from) / 1024) << " Ki "
+              << "Rss: " << std::setw(8) << std::right << printWithSeparator(d.rss) << " Ki "
+              << "Pss: " << std::setw(8) << std::right << printWithSeparator(d.pss) << " Ki : "
               << QString::asprintf("%zx-%zx", (size_t) r.from, (size_t) r.to).toStdString() << " "
               << r.permission.toStdString() << " " << r.name.toStdString()
               << std::endl;
@@ -205,57 +195,70 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
   group(g, measurement, smapsType);
 
   constexpr int indent = 80;
+  constexpr int headerIndent = 16;
+  constexpr int memoryIndent = 20;
 
-  std::cout << "pid:              " << measurement.pid << std::endl;
-  std::cout << "process id:       " << measurement.processId << std::endl;
-  std::cout << "process name:     " << measurement.processName.toStdString() << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "pid:" << measurement.pid << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "process id:" << measurement.processId << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "process name:" << measurement.processName.toStdString() << std::endl;
 
-  std::cout << "measurement:      " << measurement.id << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "measurement:" << measurement.id << std::endl;
 
 #if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
-  std::cout << "time:             " << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "time:" << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
 #else
-  std::cout << "time:             " << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
+  std::cout << std::setw(haderIndent) << std::left << "time:" << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
 #endif
 
   std::cout << std::endl;
   std::cout << "# statm data" << std::endl;
-  std::cout << "size:             " << align(measurement.statm.size, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "size:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.size) << " Ki"
             << "   // total program size "
             << "(same as VmSize in /proc/[pid]/status)" << std::endl;
 
-  std::cout << "resident:         " << align(measurement.statm.resident, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "resident:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.resident) << " Ki"
             << "   // resident set size "
             << "(same as VmRSS in /proc/[pid]/status)" << std::endl;
 
-  std::cout << "shared:           " << align(measurement.statm.shared, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "shared:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.shared) << " Ki"
             << "   // number of resident shared pages (i.e., backed by a file) "
             << "(same as RssFile+RssShmem in /proc/[pid]/status)" << std::endl;
 
-  std::cout << "text:             " << align(measurement.statm.text, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "text:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.text) << " Ki"
             << "   // text (code)" << std::endl;
 
-  std::cout << "lib:              " << align(measurement.statm.lib, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "lib:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.lib) << " Ki"
             << "   // library (unused since Linux 2.6; always 0)" << std::endl;
 
-  std::cout << "data:             " << align(measurement.statm.data, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "data:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.data) << " Ki"
             << "   // data + stack" << std::endl;
 
-  std::cout << "dt:               " << align(measurement.statm.dt, indent) << " Ki"
+  std::cout << std::setw(indent) << std::left << "dt:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(measurement.statm.dt) << " Ki"
             << "   // dirty pages (unused since Linux 2.6; always 0)" << std::endl;
 
   std::cout << std::endl;
   std::cout << "# smaps data (" << (smapsType == Rss ? "Rss" : "Pss") << ")" << std::endl;
-  std::cout << "thread stacks:    " << align(g.threadStacks, indent) << " Ki" << std::endl;
-  std::cout << "heap:             " << align(g.heap, indent) << " Ki" << std::endl;
-  std::cout << "anonymous:        " << align(g.anonymous, indent) << " Ki" << std::endl;
+  std::cout << std::setw(indent) << std::left << "thread stacks:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(g.threadStacks) << " Ki" << std::endl;
+  std::cout << std::setw(indent) << std::left << "heap:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(g.heap) << " Ki" << std::endl;
+  std::cout << std::setw(indent) << std::left << "anonymous:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(g.anonymous) << " Ki" << std::endl;
 
   int i=0;
   size_t other = 0;
   std::cout << std::endl;
   for (const auto &m: g.sortedMappings()){
     if (i < 20){
-      std::cout << m.name << " " << align(m.size, indent+17 - m.name.size()) << " Ki" << std::endl;
+      std::cout << std::setw(indent) << std::left << (m.name + " ")
+                << std::setw(memoryIndent) << std::right << printWithSeparator(m.size) << " Ki" << std::endl;
     } else {
       other += m.size;
     }
@@ -263,10 +266,12 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
   }
 
   std::cout << std::endl;
-  std::cout << "other mappings:   " << align(other, indent) << " Ki" << std::endl;
+  std::cout << std::setw(indent) << std::left << "other mappings:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(other) << " Ki" << std::endl;
 
   std::cout << std::endl;
-  std::cout << "sum:              " << align(g.sum, indent) << " Ki" << std::endl;
+  std::cout << std::setw(indent) << std::left << "sum:"
+            << std::setw(memoryIndent) << std::right << printWithSeparator(g.sum) << " Ki" << std::endl;
 }
 
 void Utils::printProcesses(const QDateTime &time,
@@ -311,7 +316,14 @@ void Utils::printProcesses(const QDateTime &time,
   std::cout << std::endl;
   std::cout << "Processes memory (" << (processType == StatmRss? "statm RSS" :(processType == Rss ? "smaps Rss" : "smaps Pss")) << "):" << std::endl;
   std::cout << std::endl;
-  std::cout << "    PID process                                                             size (% of total)" << std::endl;
+
+  constexpr int pidIndent = 7;
+  constexpr int processIndent = 40;
+  constexpr int memoryIndent = 20;
+  std::cout << std::setw(pidIndent) << std::right << "PID" << " "
+            << std::setw(processIndent) << std::left << "process"
+            << std::setw(memoryIndent) << std::right << "size" << " "
+            << "(% of total)" << std::endl;
 
   std::vector<ProcessMemory> procMem;
   procMem.reserve(processes.size());
@@ -323,18 +335,10 @@ void Utils::printProcesses(const QDateTime &time,
   });
 
   auto printProcess = [&](const std::string &pidStr, const std::string &name, size_t memory) {
-    for (int i = 7 - pidStr.size(); i > 0; i--) {
-      std::cout << " ";
-    }
-    std::cout << pidStr << " " << name;
-    for (int i = 60 - name.size(); i > 0; i--) {
-      std::cout << " ";
-    }
-    auto sizeStr = f(memory);
-    for (int i = 12 - sizeStr.size(); i > 0; i--) {
-      std::cout << " ";
-    }
-    std::cout << sizeStr << " (" << p(memory, memInfo.memTotal) << ")" << std::endl;
+    std::cout << std::setw(pidIndent) << std::right << pidStr << " "
+              << std::setw(processIndent) << std::left << name
+              << std::setw(memoryIndent) << std::right << f(memory) << " "
+              << "(" << p(memory, memInfo.memTotal) << ")" << std::endl;
   };
 
   int i = 0;
