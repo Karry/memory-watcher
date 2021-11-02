@@ -21,37 +21,24 @@
 #include "Load.h"
 
 #include <Utils.h>
-#include <ThreadPool.h>
 
 #include <QtCore/QCoreApplication>
 #include <QDebug>
 
 #include <iostream>
-#include <signal.h>
-
 
 void Load::close()
 {
   qDebug() << "close()";
   loader->deleteLater();
   feeder->deleteLater();
-  threadPool.close();
+  this->deleteLater();
 }
 
 Load::Load(long pid, const QString &smapsFile, const QString &databaseFile):
-  loaderThread(threadPool.makeThread("watcher")),
-  loader(new MemoryLoader(loaderThread, pid, smapsFile)),
+  loader(new MemoryLoader(pid, smapsFile)),
   feeder(new Feeder())
 {
-  Utils::registerQtMetatypes();
-
-  connect(&threadPool, &ThreadPool::closed, this, &Load::deleteLater);
-
-  // init watcher
-  loader->moveToThread(loaderThread);
-  QObject::connect(loaderThread, &QThread::started,
-                   loader, &MemoryLoader::init);
-
   if (!feeder->init(databaseFile)){
     close();
     return;
@@ -64,17 +51,16 @@ Load::Load(long pid, const QString &smapsFile, const QString &databaseFile):
   connect(feeder, &Feeder::inserted,
           this, &Load::close);
 
-  loaderThread->start();
-  // for debug
-  // shutdownTimer.setSingleShot(true);
-  // shutdownTimer.setInterval(10000);
-  // connect(&shutdownTimer, SIGNAL(timeout()), this, SLOT(close()));
-  // shutdownTimer.start();
+#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
+  QMetaObject::invokeMethod(loader, "init", Qt::QueuedConnection);
+#else
+  QMetaObject::invokeMethod(loader, &MemoryLoader::init, Qt::QueuedConnection);
+#endif
 }
 
 Load::~Load()
 {
-  qDebug() << "~Watcher";
+  qDebug() << "~Load";
   QCoreApplication::quit();
 }
 
@@ -102,14 +88,8 @@ int main(int argc, char* argv[]) {
   }
 
   new Load(pid, smapsFile, databaseFile);
-  /*
-  std::function<void(int)> signalCallback = [&](int){ record->close(); };
-  Utils::catchUnixSignals({SIGQUIT, SIGINT, SIGTERM, SIGHUP},
-                          &signalCallback);
-  */
 
   int result = app.exec();
-  //Utils::cleanSignalCallback();
   qDebug() << "Main loop ended...";
   return result;
 }

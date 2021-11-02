@@ -27,23 +27,10 @@
 #include <QTextStream>
 #include <QtCore/QDateTime>
 
-MemoryLoader::MemoryLoader(QThread *thread, pid_t pid, const QString &smapsFile):
-  thread(thread),
+MemoryLoader::MemoryLoader(pid_t pid, const QString &smapsFile):
   smapsFile(smapsFile),
   processId(pid, 0)
-{
-  timer.moveToThread(thread);
-}
-
-MemoryLoader::~MemoryLoader()
-{
-  if (thread != QThread::currentThread()) {
-    qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
-  }
-  qDebug() << "MemoryWatcher";
-  timer.stop();
-  thread->quit();
-}
+{}
 
 size_t parseMemory(const QString &line)
 {
@@ -107,10 +94,6 @@ bool MemoryLoader::readSmaps(QList<SmapsRange> &ranges)
 
 void MemoryLoader::update()
 {
-  if (thread != QThread::currentThread()) {
-    qWarning() << "Incorrect thread;" << thread << "!=" << QThread::currentThread();
-  }
-
   if (!smapsFile.exists()){
     qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
     return;
@@ -126,9 +109,6 @@ void MemoryLoader::update()
 
 void MemoryLoader::init()
 {
-  timer.setSingleShot(true);
-  timer.setInterval(0);
-
   if (!smapsFile.exists()){
     qWarning() << "File" << smapsFile.absoluteFilePath() << "don't exists";
     return;
@@ -157,7 +137,5 @@ void MemoryLoader::init()
   lastLineStart = arr[0];
   qDebug() << "lastLineStart:" << lastLineStart;
 
-  connect(&timer, &QTimer::timeout, this, &MemoryLoader::update);
-
-  timer.start();
+  update();
 }
