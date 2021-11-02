@@ -21,11 +21,13 @@
 #include "Load.h"
 
 #include <Utils.h>
+#include <Version.h>
 
 #include <QtCore/QCoreApplication>
 #include <QDebug>
 
 #include <iostream>
+#include <CmdLineParsing.h>
 
 void Load::close()
 {
@@ -64,30 +66,94 @@ Load::~Load()
   QCoreApplication::quit();
 }
 
+struct Arguments {
+  bool help{false};
+  bool version{false};
+  long pid{1};
+  QString databaseFile;
+  QString smapsFile;
+};
+
+class ArgParser: public CmdLineParser {
+private:
+  Arguments args;
+
+public:
+  ArgParser(QCoreApplication *app,
+            int argc, char *argv[])
+    : CmdLineParser(app->applicationName().toStdString(), argc, argv) {
+
+    using namespace std::string_literals;
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.help = value;
+              }),
+              std::vector<std::string>{"h", "help"},
+              "Display help and exits",
+              true);
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.version = value;
+              }),
+              std::vector<std::string>{"v", "version"},
+              "Display application version and exits",
+              false);
+
+    AddOption(CmdLineULongOption([this](const unsigned long &value) {
+                args.pid = value;
+              }),
+              std::vector<std::string>{"p","pid"},
+              "Pid of monitored process. Default is 1."s);
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.databaseFile = QString::fromStdString(value);
+              }),
+              "database-file",
+              "Sqlite database file for storing recording. Default is measurement.db");
+
+    AddPositional(CmdLineStringOption([this](const std::string &value){
+                    args.smapsFile = QString::fromStdString(value);
+                  }),
+                  "smaps file to be loaded to database",
+                  "smaps-file");
+  }
+
+  Arguments GetArguments() const {
+    return args;
+  }
+};
+
 int main(int argc, char* argv[]) {
   QCoreApplication app(argc, argv);
   Utils::registerQtMetatypes();
 
-  if (app.arguments().size() < 3){
-    std::cerr << "Usage:" << std::endl;
-    std::cerr << app.applicationName().toStdString() << " PID smapsFile [database-file]" << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "  default database file is measurement.${PID}.db" << std::endl;
-    return 1;
+  Arguments args;
+  {
+    ArgParser argParser(&app, argc, argv);
+
+    CmdLineParseResult argResult = argParser.Parse();
+    if (argResult.HasError()) {
+      std::cerr << "ERROR: " << argResult.GetErrorDescription() << std::endl;
+      std::cout << argParser.GetHelp() << std::endl;
+      return 1;
+    }
+
+    args = argParser.GetArguments();
+    if (args.help) {
+      std::cout << argParser.GetHelp() << std::endl;
+      return 0;
+    }
+    if (args.version) {
+      std::cout << MEMORY_WATCHER_VERSION_STRING << std::endl;
+      return 0;
+    }
   }
 
-  long pid = app.arguments()[1].toLong();
-  QString smapsFile = app.arguments()[2];
-
-  QString databaseFile;
-  if (app.arguments().size() >= 4){
-    databaseFile = app.arguments()[3];
-  }
-  if (databaseFile.isEmpty()) {
-    databaseFile = QString("measurement.%1.db").arg(pid);
+  if (args.databaseFile.isEmpty()) {
+    args.databaseFile = QString("measurement.db");
   }
 
-  new Load(pid, smapsFile, databaseFile);
+  new Load(args.pid, args.smapsFile, args.databaseFile);
 
   int result = app.exec();
   qDebug() << "Main loop ended...";
