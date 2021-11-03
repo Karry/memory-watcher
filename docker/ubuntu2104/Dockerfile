@@ -10,7 +10,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc-11 g++-11 libtbb-dev ccache libtool pkg-config cmake ninja-build \
         qttools5-dev-tools qttools5-dev libqt5sql5-sqlite libqt5charts5-dev \
-        curl catch2 && \
+        curl catch2 git && \
     # upgrade OS
     apt-get -y dist-upgrade && \
     apt-get autoremove -y && \
