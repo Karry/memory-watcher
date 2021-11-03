@@ -56,7 +56,7 @@ void Replay::run()
     deleteLater();
     return;
   }
-  if (!storage.getMeasuremntRange(currentMeasurement, lastMeasurement)){
+  if (!storage.getMeasurementRange(currentMeasurement, lastMeasurement)){
     qWarning() << "Failed to get measurement range" << db;
     deleteLater();
     return;
