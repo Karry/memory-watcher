@@ -587,8 +587,8 @@ bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cache
   return execAndGetMeasurement(measurement, sql, cacheRanges);
 }
 
-bool Storage::getMeasuremntRange(qlonglong &min,
-                                 qlonglong &max)
+bool Storage::getMeasurementRange(qlonglong &min,
+                                  qlonglong &max)
 {
   QSqlQuery sql(db);
   sql.prepare("SELECT MIN(`id`) AS min, MAX(`id`) AS max FROM `measurement`");

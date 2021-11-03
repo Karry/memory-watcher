@@ -83,8 +83,8 @@ public:
                            MemInfo &memInfo,
                            QList<Measurement> &processes);
 
-  bool getMeasuremntRange(qlonglong &min,
-                          qlonglong &max);
+  bool getMeasurementRange(qlonglong &min,
+                           qlonglong &max);
 
   bool getAllRanges(qulonglong processId, QMap<qulonglong, Range> &rangeMap);
 
