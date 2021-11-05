@@ -180,6 +180,7 @@ struct Arguments {
   QSet<long> pids;
   long period{1000};
   QString databaseFile;
+  QString procFs{"/proc"};
 };
 
 class ArgParser: public CmdLineParser {
@@ -225,6 +226,12 @@ public:
                   }),
               "database-file",
               "Sqlite database file for storing recording. Default is measurement.db");
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                    args.procFs = QString::fromStdString(value);
+                  }),
+              "proc",
+              "Mount point of proc filesystem. Default is "s + args.procFs.toStdString());
   }
 
   Arguments GetArguments() const {
@@ -262,7 +269,7 @@ int main(int argc, char* argv[]) {
     args.databaseFile = QString("measurement.db");
   }
 
-  Record *record = new Record(args.pids, args.period, args.databaseFile);
+  Record *record = new Record(args.pids, args.period, args.databaseFile, args.procFs);
   std::function<void(int)> signalCallback = [&](int){
     Utils::cleanSignalCallback();
     qDebug() << "closing";

@@ -49,7 +49,7 @@ public:
   Record(QSet<long> pids,
          long period,
          QString databaseFile,
-         QString procFs = QProcessEnvironment::systemEnvironment().value("PROCFS", "/proc"));
+         QString procFs);
 
   ~Record();
 
