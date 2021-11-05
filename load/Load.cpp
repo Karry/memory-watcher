@@ -114,8 +114,8 @@ public:
     AddPositional(CmdLineStringOption([this](const std::string &value){
                     args.smapsFile = QString::fromStdString(value);
                   }),
-                  "smaps file to be loaded to database",
-                  "smaps-file");
+                  "smaps-file",
+                  "smaps file to be loaded to database");
   }
 
   Arguments GetArguments() const {
