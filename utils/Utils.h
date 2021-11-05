@@ -108,7 +108,7 @@ public:
   static void group(MeasurementGroups &g, const Measurement &measurement, ProcessMemoryType type, bool groupSockets = false);
   static void printMeasurement(const Measurement &measurement, ProcessMemoryType type);
   static void printProcesses(const QDateTime &time,
-                             const MemInfo &memInfo, SystemMemoryType systemType,
+                             const MemInfo &memInfo,
                              const QList<Measurement> &processes, ProcessMemoryType processType);
   static void clearScreen();
   static void registerQtMetatypes();

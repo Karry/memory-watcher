@@ -99,9 +99,9 @@ void Chart::run()
   for (qint64 step = 0; step < pointCount; step ++){
     Measurement measurement;
     // TODO: update to new storage model
-    storage.getMemoryPeak(0, measurement, type,
-      measurementFrom + step * stepSize,
-      measurementFrom + (step * stepSize) + stepSize);
+    // storage.getMemoryPeak(0, measurement, type,
+    //   measurementFrom + step * stepSize,
+    //   measurementFrom + (step * stepSize) + stepSize);
 
     Utils::group(measurements[step], measurement, type, true);
     if (peak.sum < measurements[step].sum) {

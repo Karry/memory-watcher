@@ -275,17 +275,16 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
 }
 
 void Utils::printProcesses(const QDateTime &time,
-                           const MemInfo &memInfo, SystemMemoryType systemType,
+                           const MemInfo &memInfo,
                            const QList<Measurement> &processes, ProcessMemoryType processType) {
   using namespace std::string_literals;
 
-  std::cout << "Memory peak at ";
+  std::cout << "Memory at ";
 #if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
-  std::cout << time.toString(Qt::ISODateWithMs).toStdString();
+  std::cout << time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
 #else
-  std::cout << time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString();
+  std::cout << time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
 #endif
-  std::cout << " (" << (systemType == MemAvailable ? "estimated by kernel" : "computed") << ")" << std::endl;
 
   auto f = [](size_t s) -> std::string {
     return ByteSizeToString(double(s) * 1024);

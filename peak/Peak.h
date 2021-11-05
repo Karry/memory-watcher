@@ -41,7 +41,7 @@ public:
        ProcessMemoryType type,
        SystemMemoryType systemType);
 
-  virtual ~Peak();
+  ~Peak() override;
 
 private:
   Storage storage;

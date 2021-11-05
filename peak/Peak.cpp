@@ -178,7 +178,7 @@ void Peak::run()
 
     // Utils::printMeasurementSmapsLike(measurement);
     // std::cout << std::endl << std::endl;
-    Utils::printProcesses(time, memInfo, systemType, processes, processType);
+    Utils::printProcesses(time, memInfo, processes, processType);
   }
 
   deleteLater();

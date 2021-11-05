@@ -72,9 +72,12 @@ public:
 
   bool getMemoryPeak(qulonglong processId,
                      Measurement &measurement,
-                     ProcessMemoryType type = Rss,
-                     qint64 from = std::numeric_limits<qint64>::min(),
-                     qint64 to = std::numeric_limits<qint64>::max());
+                     ProcessMemoryType type = Rss);
+
+  bool getMeasurement(qulonglong processId,
+                      const QDateTime &time,
+                      Measurement &measurement,
+                      bool cacheRanges = false);
 
   bool getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges = false);
 
@@ -83,8 +86,14 @@ public:
                            MemInfo &memInfo,
                            QList<Measurement> &processes);
 
+  bool getSystemMemory(const QDateTime &time,
+                       MemInfo &memInfo,
+                       QList<Measurement> &processes);
+
   bool getMeasurementRange(qlonglong &min,
                            qlonglong &max);
+
+  bool getMeasurementTimes(QList<QDateTime> &times);
 
   bool getAllRanges(qulonglong processId, QMap<qulonglong, Range> &rangeMap);
 
@@ -104,8 +113,9 @@ public:
   }
 
 private:
-  bool execAndGetMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
-  bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges = false);
+  bool execAndGetSystemMemory(QSqlQuery &sql, QDateTime &time, MemInfo &memInfo, QList<Measurement> &processes);
+  bool execAndGetMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges);
+  bool getMeasurement(Measurement &measurement, QSqlQuery &measurementQuery, bool cacheRanges);
   bool getRanges(QMap<qulonglong, Range> &rangeMap, QSqlQuery &sql);
 
 private:

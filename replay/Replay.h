@@ -24,6 +24,8 @@
 #include <QString>
 #include <QTimer>
 
+#include <optional>
+
 class Replay : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Replay)
@@ -35,19 +37,22 @@ public slots:
 
 public:
   Replay(const QString &db,
-         int interval = 20,
-         int idStep = 1);
+         std::optional<pid_t> pid,
+         std::optional<qulonglong> processId,
+         unsigned long interval,
+         ProcessMemoryType processType);
 
-  ~Replay();
+  ~Replay() override;
 
 private:
   QTimer timer;
+  QString db;
+  std::optional<pid_t> pid;
+  std::optional<qulonglong> processId;
+  unsigned long interval{20};
   ProcessMemoryType type{Rss};
   Storage storage;
+  QList<QDateTime> times;
+  unsigned int cursor{0};
   Measurement measurement;
-  QString db;
-  qlonglong currentMeasurement;
-  qlonglong lastMeasurement;
-  int interval{20};
-  int idStep{1};
 };
