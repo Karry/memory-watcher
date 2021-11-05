@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 
 if [ ! -d /sources ] ; then
-  git clone --recursive git@github.com:Karry/memory-watcher.git /sources
+  git clone --recursive https://github.com/Karry/memory-watcher.git /sources
 fi
 
 BUILD_DIR=${BUILD_DIR:-build-ubuntu2104}
