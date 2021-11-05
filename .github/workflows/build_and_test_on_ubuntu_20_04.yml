@@ -18,7 +18,7 @@ jobs:
       - name: Install software-properties-common
         run:  sudo apt-get install software-properties-common
       - name: Install gcc compiler, cmake and ninja
-        run:  sudo apt-get -y install gcc-10 g++-10 libtbb-dev ccache libtool pkg-config cmake ninja-build
+        run:  sudo apt-get -y install gcc-10 g++-10 ccache libtool pkg-config cmake ninja-build
       - name: Install memory watcher dependencies
         run:  "sudo apt-get update && sudo apt-get install -y
                qt5-default qttools5-dev-tools
@@ -34,6 +34,37 @@ jobs:
         env:
           CXX: g++-10
           CC: gcc-10
+      - name: Build project
+        run: cmake --build build -- all unittests
+      - name: Run tests
+        run: ctest -j 2 --output-on-failure
+        working-directory: build
+
+  build_clang_cmake:
+    name: clang and cmake
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install software-properties-common
+        run:  sudo apt-get install software-properties-common
+      - name: Install clang compiler, cmake and ninja
+        run:  sudo apt-get -y install clang ccache libtool pkg-config cmake ninja-build
+      - name: Install memory watcher dependencies
+        run:  "sudo apt-get update && sudo apt-get install -y
+               qt5-default qttools5-dev-tools
+               qttools5-dev libqt5sql5-sqlite libqt5charts5-dev
+               "
+      - name: Install Catch2
+        run: "sudo apt-get install -y curl &&
+              curl -o /tmp/catch2_2.13.4-2_amd64.deb http://de.archive.ubuntu.com/ubuntu/pool/universe/c/catch2/catch2_2.13.4-2_amd64.deb &&
+              sudo dpkg -i /tmp/catch2_2.13.4-2_amd64.deb &&
+              rm /tmp/catch2_2.13.4-2_amd64.deb"
+      - name: Configure build project
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_UNITY_BUILD=ON -Wno-dev -G "Ninja"
+        env:
+          CXX: clang++
+          CC: clang
       - name: Build project
         run: cmake --build build -- all unittests
       - name: Run tests
