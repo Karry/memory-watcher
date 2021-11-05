@@ -10,8 +10,15 @@ libc allocator.
 
 ## How it works
 
-`memory-record` reads `/proc/<PID>/smaps` file periodically and store information about memory regions 
-to SQLite database. This database may be read by custom scripts or provided tools...
+`memory-record` tool reads `/proc` files periodically and store information about system memory 
+and memory regions of processes to SQLite database. Gathered recording may be analyzed manually
+or by provided tools...
+
+Used files:
+ - `/proc/meminfo` - system wide memory statistics
+ - `/proc/<PID>/statm` - process memory overview
+ - `/proc/<PID>/smaps` - details about process memory regions
+ - `/proc/<PID>/oom_adj, oom_score, oom_score_adj` - process tunables for OOM killer
 
 Note that Rss and Pss sizes obtained from `smaps` file may differ from Rss visible in `status`, 
 `statm` or `getrusage` syscall. As explained 
@@ -24,8 +31,19 @@ and most likely compute Rss differently (TODO: explanation).
 
 This tool records process memory with given period (milliseconds) and store measurement to database. 
 
-```bash
-./memory-record PID period-ms
+```
+memory-record [OPTION]...
+
+Options:
+  -h,
+  --help                   Display help and exits
+  -v,
+  --version                Display application version and exits
+  -p <number>,
+  --pid <number>           Pid of monitored process. May be defined multiple times. If not defined, all processes are monitored.
+  --period <number>        Period of snapshot [ms], default 1000
+  --database-file <string> Sqlite database file for storing recording. Default is measurement.db
+  --proc <string>          Mount point of proc filesystem. Default is /proc
 ```
 
 Tool will exit on SIGQUIT, SIGINT (Ctrl+C), SIGTERM or SIGHUP signal.
@@ -36,7 +54,7 @@ it is possible to do it via sshfs (sftp-server is required on the remote device)
 ```bash
 mkdir proc
 sshfs -odirect_io  root@192.168.1.1:/proc $(pwd)/proc
-PROCFS=./proc memory-record remote-PID period-ms
+memory-record --proc ./proc -p remote-PID --period period-ms
 ```
 
 ### Load tool
@@ -44,16 +62,28 @@ PROCFS=./proc memory-record remote-PID period-ms
 This tool allow to load exactly one sample of smaps to database.
 It may be useful with custom script.
 
-```bash
-memory-load-smaps PID smapsFile [database-file]
+```
+memory-load-smaps [OPTION]... smaps-file
+
+Mandatory arguments:
+  smaps-file               smaps file to be loaded to database
+
+Options:
+  -h,
+  --help                   Display help and exits
+  -v,
+  --version                Display application version and exits
+  -p <number>,
+  --pid <number>           Pid of monitored process. Default is 1.
+  --database-file <string> Sqlite database file for storing recording. Default is measurement.db
 ```
 
 ### Peak tool
 
 This tool select peak memory (Rss or Pss) usage in recording and prints summary.
 
-```bash
-# ./memory-peak measurement.db rss
+```
+# ./memory-peak -p 123 --database-file measurement.db --process-memory rss
 peak measurement: 481
 time:             2018-08-17T15:58:03.942
 
@@ -91,8 +121,23 @@ sum:                                                  740 980 Ki
 
 Experiment tool that replay all measurements in database.
 
-```bash
-memory-replay database.db
+```
+memory-replay [OPTION]...
+
+Options:
+  -h,
+  --help                    Display help and exits
+  -v,
+  --version                 Display application version and exits
+  --interval <number>       Step interval [ms]. Default is 1000
+  -p <number>,
+  --pid <number>            Pid of analyzed process. If not defined, system wide statistics are displayed.
+  --process-id <number>     Internal process id (may be used in case that pid is not unique)
+  --database-file <string>  Sqlite database file with recording. Default is measurement.db
+  --process-memory <string> Type of process memory used for sorting.
+        pss (default) - Proportional set size as sum of pss values from /proc/[pid]/smaps
+        rss - Resident set size as sum of rss values from /proc/[pid]/smaps
+        statm - Resident set size as provided in /proc/[pid]/statm
 ```
 
 ### Chart tool
