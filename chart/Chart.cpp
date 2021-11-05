@@ -21,6 +21,7 @@
 
 #include <Utils.h>
 #include <ThreadPool.h>
+#include <CmdLineParsing.h>
 
 #include <QApplication>
 #include <QDebug>
@@ -36,6 +37,8 @@
 #include <unordered_map>
 #include <signal.h>
 #include <unordered_set>
+#include <optional>
+#include <Version.h>
 
 using namespace QtCharts;
 
@@ -47,8 +50,73 @@ constexpr int Sockets = 3;
 constexpr int OtherMappings = 4;
 }
 
-Chart::Chart(const QString &db):
-  db(db)
+
+struct Arguments {
+  bool help{false};
+  bool version{false};
+  std::optional<long> pid;
+  std::optional<qulonglong> processId;
+  QString databaseFile;
+};
+
+class ArgParser: public CmdLineParser {
+private:
+  Arguments args;
+
+public:
+  ArgParser(QCoreApplication *app,
+            int argc, char *argv[])
+    : CmdLineParser(app->applicationName().toStdString(), argc, argv) {
+
+    using namespace std::string_literals;
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.help = value;
+              }),
+              std::vector<std::string>{"h", "help"},
+              "Display help and exits",
+              true);
+
+    AddOption(CmdLineFlag([this](const bool &value) {
+                args.version = value;
+              }),
+              std::vector<std::string>{"v", "version"},
+              "Display application version and exits",
+              false);
+
+    AddOption(CmdLineULongOption([this](const unsigned long &value) {
+                args.pid = value;
+              }),
+              std::vector<std::string>{"p","pid"},
+              "Pid of analyzed process. "s +
+              "If not defined, system wide statistics are displayed."s);
+
+    AddOption(CmdLineULongOption([this](const qulonglong &value) {
+                args.processId = value;
+              }),
+              "process-id",
+              "Internal process id (may be used in case that pid is not unique)"s);
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.databaseFile = QString::fromStdString(value);
+              }),
+              "database-file",
+              "Sqlite database file with recording. Default is measurement.db");
+
+  }
+
+  Arguments GetArguments() const {
+    return args;
+  }
+};
+
+
+Chart::Chart(const QString &db,
+             std::optional<pid_t> pid,
+             std::optional<qulonglong> processId):
+  db(db),
+  pid(pid),
+  processId(processId)
 {
 }
 
@@ -71,11 +139,45 @@ void Chart::run()
     return;
   }
 
+  if (!storage.getMeasurementTimes(times)){
+    qWarning() << "Failed to get measurement time points" << db;
+    deleteLater();
+    return;
+  }
+
+  if (pid.has_value() || processId.has_value()) {
+    if (!processId.has_value()) {
+      using ProcessMap = QMap<ProcessId, QString>;
+      ProcessMap processes;
+      storage.lookupPid(pid.value(), processes);
+      if (processes.empty()) {
+        qWarning() << "Cannot found pid" << pid.value();
+        deleteLater();
+        return;
+      }
+      if (processes.size() > 1) {
+        std::cerr << "Not unique pid " << pid.value() << ", try to use --process-id argument." << std::endl;
+        std::cout << "ProcessId\tname:" << std::endl;
+        for (ProcessMap::const_iterator it = processes.cbegin(); it != processes.cend(); ++it) {
+          std::cout << it.key().hash() << '\t' << it.value().toStdString() << std::endl;
+        }
+        deleteLater();
+        return;
+      }
+      processId = processes.firstKey().hash();
+    }
+  }
+  if (!processId.has_value()){
+    qWarning() << "Failed to determine process" << db;
+    deleteLater();
+    return;
+  }
+
   // chart configuration
   ProcessMemoryType type = ProcessMemoryType::Rss;
 
   qint64 measurementFrom = 0;
-  qint64 measurementTo = storage.measurementCount();
+  qint64 measurementTo = times.size();
   qint64 pointCount = std::min((qint64)1000000, measurementTo - measurementFrom);
 
   if (pointCount == 0){
@@ -96,12 +198,12 @@ void Chart::run()
   QElapsedTimer time;
   time.start();
   MeasurementGroups peak;
+  Measurement measurement;
   for (qint64 step = 0; step < pointCount; step ++){
-    Measurement measurement;
-    // TODO: update to new storage model
-    // storage.getMemoryPeak(0, measurement, type,
-    //   measurementFrom + step * stepSize,
-    //   measurementFrom + (step * stepSize) + stepSize);
+    storage.getMeasurement(processId.value(),
+                           times[std::min(measurementTo - 1, step * stepSize)],
+                           measurement,
+                           true);
 
     Utils::group(measurements[step], measurement, type, true);
     if (peak.sum < measurements[step].sum) {
@@ -209,14 +311,41 @@ void Chart::run()
 
 int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
+  Utils::registerQtMetatypes();
 
-  QString db = app.arguments().size() > 1 ? app.arguments()[1] : "measurement.db";
+  Arguments args;
+  {
+    ArgParser argParser(&app, argc, argv);
 
-  Chart *peak = new Chart(db);
-  QMetaObject::invokeMethod(peak, "run", Qt::QueuedConnection);
+    CmdLineParseResult argResult = argParser.Parse();
+    if (argResult.HasError()) {
+      std::cerr << "ERROR: " << argResult.GetErrorDescription() << std::endl;
+      std::cout << argParser.GetHelp() << std::endl;
+      return 1;
+    }
+
+    args = argParser.GetArguments();
+    if (args.help) {
+      std::cout << argParser.GetHelp() << std::endl;
+      return 0;
+    }
+    if (args.version) {
+      std::cout << MEMORY_WATCHER_VERSION_STRING << std::endl;
+      return 0;
+    }
+  }
+
+  if (args.databaseFile.isEmpty()) {
+    args.databaseFile = QString("measurement.db");
+  }
+
+  Chart *chart = new Chart(args.databaseFile,
+                           args.pid,
+                           args.processId);
+  QMetaObject::invokeMethod(chart, "run", Qt::QueuedConnection);
 
   app.setQuitOnLastWindowClosed(false);
-  QObject::connect(&app, &QApplication::lastWindowClosed, peak, &Chart::deleteLater);
+  QObject::connect(&app, &QApplication::lastWindowClosed, chart, &Chart::deleteLater);
 
   int result = app.exec();
   qDebug() << "Main loop ended...";
