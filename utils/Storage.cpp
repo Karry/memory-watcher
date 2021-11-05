@@ -434,7 +434,7 @@ bool Storage::getMeasurement(Measurement &measurement, QSqlQuery &measurementQue
   sql.bindValue(":measurement_id", measurement.id);
   sql.exec();
   if (sql.lastError().isValid()) {
-    qWarning() << "Select ranges failed" << sql.lastError();
+    qWarning() << "Select data failed" << sql.lastError();
     return false;
   }
   measurement.data.clear();
@@ -484,7 +484,7 @@ bool Storage::getProcess(qulonglong processId, pid_t &pid, QString &processName)
   return true;
 }
 
-bool Storage::getMemoryPeak(qulonglong processId, Measurement &measurement, ProcessMemoryType type, qint64 from, qint64 to)
+bool Storage::getMemoryPeak(qulonglong processId, Measurement &measurement, ProcessMemoryType type)
 {
   if (!getProcess(processId, measurement.pid, measurement.processName)) {
     qWarning() << "Failed to read process details";
@@ -496,19 +496,28 @@ bool Storage::getMemoryPeak(qulonglong processId, Measurement &measurement, Proc
   // measurement
   if (type == Rss) {
     sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND rss_sum = ")
-                .append("(SELECT MAX(rss_sum) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
+                .append("(SELECT MAX(rss_sum) FROM `measurement` WHERE process_id = :process_id) LIMIT 1;"));
   }else if (type == StatmRss){
     sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND statm_resident = ")
-                .append("(SELECT MAX(statm_resident) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
+                .append("(SELECT MAX(statm_resident) FROM `measurement` WHERE process_id = :process_id) LIMIT 1;"));
   }else{
     assert(type == Pss);
     sql.prepare(QString("SELECT * FROM `measurement` WHERE process_id = :process_id AND pss_sum = ")
-                .append("(SELECT MAX(pss_sum) FROM `measurement` WHERE process_id = :process_id AND `id` >= :from AND id < :to) AND `id` >= :from AND id < :to LIMIT 1;"));
+                .append("(SELECT MAX(pss_sum) FROM `measurement` WHERE process_id = :process_id) LIMIT 1;"));
   }
   sql.bindValue(":process_id", processId);
-  sql.bindValue(":from", from);
-  sql.bindValue(":to", to);
-  return execAndGetMeasurement(measurement, sql);
+
+  return execAndGetMeasurement(measurement, sql, false);
+}
+
+bool Storage::getSystemMemory(const QDateTime &time,
+                              MemInfo &memInfo,
+                              QList<Measurement> &processes) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `system_memory` WHERE `time` = :time LIMIT 1;");
+  sql.bindValue(":time", time);
+  QDateTime timeOut;
+  return execAndGetSystemMemory(sql, timeOut, memInfo, processes);
 }
 
 bool Storage::getSystemMemoryPeak(SystemMemoryType memoryType,
@@ -520,8 +529,14 @@ bool Storage::getSystemMemoryPeak(SystemMemoryType memoryType,
     sql.prepare("SELECT * FROM `system_memory` ORDER BY `mem_available` ASC LIMIT 1;");
   } else {
     assert(memoryType == MemAvailableComputed);
-    sql.prepare("SELECT * FROM `system_memory` ORDER BY (`mem_free` + `buffers` + (`cached` - `shmem`) + `swap_cache` + `s_reclaimable`) ASC LIMIT 1;");
+    sql.prepare(
+      "SELECT * FROM `system_memory` ORDER BY (`mem_free` + `buffers` + (`cached` - `shmem`) + `swap_cache` + `s_reclaimable`) ASC LIMIT 1;");
   }
+  return execAndGetSystemMemory(sql, time, memInfo, processes);
+}
+
+bool Storage::execAndGetSystemMemory(QSqlQuery &sql, QDateTime &time, MemInfo &memInfo, QList<Measurement> &processes) {
+
   sql.exec();
   if (sql.lastError().isValid()) {
     qWarning() << "Select of system_memory failed" << sql.lastError();
@@ -557,7 +572,7 @@ bool Storage::getSystemMemoryPeak(SystemMemoryType memoryType,
     Measurement measurement;
     measurement.pid = varToULong(sql.value("pid"));
     measurement.processName = varToString(sql.value("name"));
-    if (!getMeasurement(measurement, sql)) {
+    if (!getMeasurement(measurement, sql, false)) {
       qWarning() << "Select of measurement failed" << sql.lastError();
       return false;
     }
@@ -577,6 +592,23 @@ qint64 Storage::measurementCount()
   }
   sql.next();
   return varToLong(sql.value("cnt"));
+}
+
+bool Storage::getMeasurement(qulonglong processId,
+                             const QDateTime &time,
+                             Measurement &measurement,
+                             bool cacheRanges) {
+
+  if (!getProcess(processId, measurement.pid, measurement.processName)) {
+    qWarning() << "Failed to read process details";
+    return false;
+  }
+
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `measurement` WHERE `process_id` = :process_id AND `time` = :time;");
+  sql.bindValue(":process_id", processId);
+  sql.bindValue(":time", time);
+  return execAndGetMeasurement(measurement, sql, cacheRanges);
 }
 
 bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges)
@@ -604,6 +636,22 @@ bool Storage::getMeasurementRange(qlonglong &min,
 
   min = varToLong(sql.value("min"));
   max = varToLong(sql.value("max"));
+
+  return true;
+}
+
+bool Storage::getMeasurementTimes(QList<QDateTime> &times) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT `time` FROM `system_memory` ORDER BY `time`");
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+
+  while (sql.next()) {
+    times << varToDateTime(sql.value("time"));
+  }
 
   return true;
 }
