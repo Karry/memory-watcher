@@ -17,15 +17,15 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
-#ifndef MEMORY_WATCHER_PEAK_H
-#define MEMORY_WATCHER_PEAK_H
+#pragma once
 
 #include <Storage.h>
 
 #include <QObject>
 #include <QString>
 #include <QtWidgets/QMainWindow>
+
+#include <optional>
 
 class Chart : public QObject {
   Q_OBJECT
@@ -36,14 +36,17 @@ public slots:
   void run();
 
 public:
-  Chart(const QString &db);
-  ~Chart();
+  Chart(const QString &db,
+        std::optional<pid_t> pid,
+        std::optional<qulonglong> processId);
+
+  ~Chart() override;
 
 private:
   Storage storage;
   QString db;
+  std::optional<pid_t> pid;
+  std::optional<qulonglong> processId;
+  QList<QDateTime> times;
   QMainWindow window;
 };
-
-
-#endif //MEMORY_WATCHER_PEAK_H
