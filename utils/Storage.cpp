@@ -619,27 +619,6 @@ bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cache
   return execAndGetMeasurement(measurement, sql, cacheRanges);
 }
 
-bool Storage::getMeasurementRange(qlonglong &min,
-                                  qlonglong &max)
-{
-  QSqlQuery sql(db);
-  sql.prepare("SELECT MIN(`id`) AS min, MAX(`id`) AS max FROM `measurement`");
-  sql.exec();
-  if (sql.lastError().isValid()) {
-    qWarning() << "Select ranges failed" << sql.lastError();
-    return false;
-  }
-  if (!sql.next()){
-    qWarning() << "No result";
-    return false;
-  }
-
-  min = varToLong(sql.value("min"));
-  max = varToLong(sql.value("max"));
-
-  return true;
-}
-
 bool Storage::getMeasurementTimes(QList<QDateTime> &times) {
   QSqlQuery sql(db);
   sql.prepare("SELECT `time` FROM `system_memory` ORDER BY `time`");
