@@ -323,7 +323,8 @@ void Utils::printProcesses(const QDateTime &time,
   std::cout << std::setw(pidIndent) << std::right << "PID" << " "
             << std::setw(processIndent) << std::left << "process"
             << std::setw(memoryIndent) << std::right << "size" << " "
-            << "(% of total)" << std::endl;
+            << "(% of total)"
+            << "  [oom_adj, oom_score, oom_score_adj]" << std::endl;
 
   std::vector<ProcessMemory> procMem;
   procMem.reserve(processes.size());
@@ -334,11 +335,16 @@ void Utils::printProcesses(const QDateTime &time,
     return a.memory > b.memory;
   });
 
-  auto printProcess = [&](const std::string &pidStr, const std::string &name, size_t memory) {
+  auto printProcess = [&](const std::string &pidStr, const std::string &name, size_t memory, const OomScore &oomScore) {
     std::cout << std::setw(pidIndent) << std::right << pidStr << " "
               << std::setw(processIndent) << std::left << name
               << std::setw(memoryIndent) << std::right << f(memory) << " "
-              << "(" << p(memory, memInfo.memTotal) << ")" << std::endl;
+              << "(" << p(memory, memInfo.memTotal) << ")";
+
+    if (oomScore.adj !=0 || oomScore.score != 0 || oomScore.scoreAdj) {
+      std::cout << "  [" << oomScore.adj << ", " << oomScore.score << ", " << oomScore.scoreAdj << "]";
+    }
+    std::cout << std::endl;
   };
 
   int i = 0;
@@ -346,7 +352,7 @@ void Utils::printProcesses(const QDateTime &time,
   size_t sumSize = 0;
   for (auto const &proc: procMem) {
     if (i < 30) {
-      printProcess(std::to_string(proc.m.pid), proc.m.processName.toStdString(), proc.memory);
+      printProcess(std::to_string(proc.m.pid), proc.m.processName.toStdString(), proc.memory, proc.m.oomScore);
     } else {
       otherSize += proc.memory;
     }
@@ -354,8 +360,8 @@ void Utils::printProcesses(const QDateTime &time,
     i++;
   }
   std::cout << std::endl;
-  printProcess("", "others", otherSize);
-  printProcess("", "sum", sumSize);
+  printProcess("", "others", otherSize, OomScore{});
+  printProcess("", "sum", sumSize, OomScore{});
 }
 
 void Utils::clearScreen()
