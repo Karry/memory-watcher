@@ -619,6 +619,23 @@ bool Storage::getMeasurement(Measurement &measurement, qlonglong &id, bool cache
   return execAndGetMeasurement(measurement, sql, cacheRanges);
 }
 
+bool Storage::getMeasurementTimes(qulonglong processId, QList<QDateTime> &times) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT `time` FROM `measurement` WHERE `process_id` = :process_id ORDER BY `time`");
+  sql.bindValue(":process_id", processId);
+  sql.exec();
+  if (sql.lastError().isValid()) {
+    qWarning() << "Select ranges failed" << sql.lastError();
+    return false;
+  }
+
+  while (sql.next()) {
+    times << varToDateTime(sql.value("time"));
+  }
+
+  return true;
+}
+
 bool Storage::getMeasurementTimes(QList<QDateTime> &times) {
   QSqlQuery sql(db);
   sql.prepare("SELECT `time` FROM `system_memory` ORDER BY `time`");

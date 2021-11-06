@@ -138,11 +138,6 @@ void Replay::run()
     deleteLater();
     return;
   }
-  if (!storage.getMeasurementTimes(times)){
-    qWarning() << "Failed to get measurement time points" << db;
-    deleteLater();
-    return;
-  }
 
   if (pid.has_value() || processId.has_value()) {
     if (!processId.has_value()) {
@@ -164,6 +159,20 @@ void Replay::run()
         return;
       }
       processId = processes.firstKey().hash();
+    }
+  }
+
+  if (processId.has_value()) {
+    if (!storage.getMeasurementTimes(processId.value(), times)) {
+      qWarning() << "Failed to get measurement time points" << db;
+      deleteLater();
+      return;
+    }
+  } else {
+    if (!storage.getMeasurementTimes(times)) {
+      qWarning() << "Failed to get measurement time points" << db;
+      deleteLater();
+      return;
     }
   }
 

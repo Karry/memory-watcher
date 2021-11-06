@@ -139,12 +139,6 @@ void Chart::run()
     return;
   }
 
-  if (!storage.getMeasurementTimes(times)){
-    qWarning() << "Failed to get measurement time points" << db;
-    deleteLater();
-    return;
-  }
-
   if (pid.has_value() || processId.has_value()) {
     if (!processId.has_value()) {
       using ProcessMap = QMap<ProcessId, QString>;
@@ -169,6 +163,12 @@ void Chart::run()
   }
   if (!processId.has_value()){
     qWarning() << "Failed to determine process" << db;
+    deleteLater();
+    return;
+  }
+
+  if (!storage.getMeasurementTimes(processId.value(), times)){
+    qWarning() << "Failed to get measurement time points" << db;
     deleteLater();
     return;
   }

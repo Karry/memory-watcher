@@ -90,6 +90,8 @@ public:
                        MemInfo &memInfo,
                        QList<Measurement> &processes);
 
+  bool getMeasurementTimes(qulonglong processId, QList<QDateTime> &times);
+
   bool getMeasurementTimes(QList<QDateTime> &times);
 
   bool getAllRanges(qulonglong processId, QMap<qulonglong, Range> &rangeMap);
