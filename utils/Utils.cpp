@@ -303,8 +303,9 @@ void Utils::printProcesses(const QDateTime &time,
 
   std::cout << "Memory details: " << f(memInfo.memTotal) << " total, " << f(memInfo.memFree) << " free, "
             << f(memInfo.buffers) << " buffers, " << f(memInfo.cached) << " cached (including shmem)" << std::endl;
-  std::cout << "                " << f(memInfo.swapCache) << " swap cache, " << f(memInfo.sReclaimable) << " SLAB reclaimable, "
-            << f(memInfo.shmem) << " shmem (tmpfs, zram?)" << std::endl;
+  std::cout << "                " << f(memInfo.swapCache) << " swap cache, " << f(memInfo.slab) << " SLAB, "
+            << f(memInfo.sReclaimable) << " SLAB reclaimable, "
+            << f(memInfo.shmem) << " shmem (tmpfs)" << std::endl;
   std::cout << "Swap:           " << f(memInfo.swapTotal) << " total, " << f(memInfo.swapFree) << " free (" << p(memInfo.swapFree, memInfo.swapTotal) << ")"<< std::endl;
   std::cout << "Available:      " << f(memInfo.memAvailable) << " (" << p(memInfo.memAvailable, memInfo.memTotal) << ") estimated by kernel" << std::endl;
   size_t computedAvailable = memInfo.memFree + memInfo.buffers + (memInfo.cached - memInfo.shmem) + memInfo.swapCache + memInfo.sReclaimable;

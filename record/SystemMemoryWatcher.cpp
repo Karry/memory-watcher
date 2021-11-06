@@ -86,6 +86,8 @@ void SystemMemoryWatcher::update(QDateTime time) {
       memInfo.mapped = parseLine(line);
     } else if (line.startsWith("Shmem:")) {
       memInfo.shmem = parseLine(line);
+    } else if (line.startsWith("Slab:")) {
+      memInfo.slab = parseLine(line);
     } else if (line.startsWith("SReclaimable:")) {
       memInfo.sReclaimable = parseLine(line);
     }

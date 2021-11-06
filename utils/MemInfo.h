@@ -38,6 +38,7 @@ struct MemInfo {
   size_t anonPages{0};    //!< Non-file backed pages mapped into user-space page tables.
   size_t mapped{0};       //!< Files which have been mapped into memory (with mmap(2)), such as libraries.
   size_t shmem{0};        //!< Amount of memory consumed in tmpfs(5) filesystems.
+  size_t slab{0};         //!< In-kernel data structures cache.
   size_t sReclaimable{0}; //!< Part of Slab, that might be reclaimed, such as caches.
 };
 

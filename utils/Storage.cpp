@@ -150,6 +150,7 @@ bool Storage::updateSchema()
     sql.append(",").append("`anon_pages` INTEGER NOT NULL ");
     sql.append(",").append("`mapped` INTEGER NOT NULL ");
     sql.append(",").append("`shmem` INTEGER NOT NULL ");
+    sql.append(",").append("`slab` INTEGER NOT NULL ");
     sql.append(",").append("`s_reclaimable` INTEGER NOT NULL ");
 
     sql.append(");");
@@ -226,9 +227,9 @@ bool Storage::init(QString file)
 
     sqlSystemInsert = QSqlQuery(db);
     sqlSystemInsert.prepare("INSERT INTO `system_memory` (`time`, `mem_total`, `mem_free`, `mem_available`, `buffers`, `cached`, `swap_cache`, "
-                            "   `swap_total`, `swap_free`, `anon_pages`, `mapped`, `shmem`, `s_reclaimable`"
+                            "   `swap_total`, `swap_free`, `anon_pages`, `mapped`, `shmem`, `slab`, `s_reclaimable`"
                             ") VALUES (:time, :mem_total, :mem_free, :mem_available, :buffers, :cached, :swap_cache, "
-                            "   :swap_total, :swap_free, :anon_pages, :mapped, :shmem, :s_reclaimable)");
+                            "   :swap_total, :swap_free, :anon_pages, :mapped, :shmem, :slab, :s_reclaimable)");
   }
   return valid;
 }
@@ -341,6 +342,7 @@ bool Storage::insertSystemMemInfo(const QDateTime &time, const MemInfo &memInfo)
   sqlSystemInsert.bindValue(":anon_pages", (qlonglong)memInfo.anonPages);
   sqlSystemInsert.bindValue(":mapped", (qlonglong)memInfo.mapped);
   sqlSystemInsert.bindValue(":shmem", (qlonglong)memInfo.shmem);
+  sqlSystemInsert.bindValue(":slab", (qlonglong)memInfo.slab);
   sqlSystemInsert.bindValue(":s_reclaimable", (qlonglong)memInfo.sReclaimable);
 
   sqlSystemInsert.exec();
@@ -558,6 +560,7 @@ bool Storage::execAndGetSystemMemory(QSqlQuery &sql, QDateTime &time, MemInfo &m
   memInfo.swapTotal = varToULong(sql.value("swap_total"));
   memInfo.swapFree = varToULong(sql.value("swap_free"));
   memInfo.shmem = varToULong(sql.value("shmem"));
+  memInfo.slab = varToULong(sql.value("slab"));
   memInfo.sReclaimable = varToULong(sql.value("s_reclaimable"));
 
   sql.prepare(QString("SELECT `p`.`pid`, `p`.`start_time`, `p`.`name`, `m`.* ")
