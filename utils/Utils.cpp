@@ -207,7 +207,7 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
 #if QT_VERSION >= 0x050800 // Qt::ISODateWithMs was introduced in Qt 5.8
   std::cout << std::setw(headerIndent) << std::left << "time:" << measurement.time.toString(Qt::ISODateWithMs).toStdString() << std::endl;
 #else
-  std::cout << std::setw(haderIndent) << std::left << "time:" << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
+  std::cout << std::setw(headerIndent) << std::left << "time:" << measurement.time.toString("yyyy-MM-ddTHH:mm:ss.zzz").toStdString() << std::endl;
 #endif
 
   std::cout << std::endl;
