@@ -39,6 +39,7 @@ struct Arguments {
   QString databaseFile;
   QString processMemoryType{"pss"};
   QString systemMemoryType{"MemAvailable"};
+  QDateTime measurementTime;
 };
 
 class ArgParser: public CmdLineParser {
@@ -101,6 +102,16 @@ public:
               "Type of system memory used for sorting (when system-wide statistic is used)."s
               "\n\tMemAvailable (default) - Kernel estimate how much memory is available before system start swapping."s
               "\n\tMemAvailableComputed - It means: MemFree + Buffers + (Cached - Shmem) + SwapCache + SReclaimable."s);
+
+    AddOption(CmdLineStringOption([this](const std::string &value){
+                args.measurementTime = QDateTime::fromString(QString::fromStdString(value), Qt::ISODate);
+                if (!args.measurementTime.isValid()){
+                  qWarning() << "Cannot parse" << QString::fromStdString(value) << "as date-time.";
+                }
+              }),
+              "measurement-time",
+              "Instead of peak memory, show measurement at specified time, or right before it."s
+              "\n\tTime should be in ISO 8601 format, for example \"2021-10-30T12:31:17.513\""s);
   }
 
   Arguments GetArguments() const {
@@ -112,8 +123,9 @@ Peak::Peak(const QString &db,
            std::optional<pid_t> pid,
            std::optional<qulonglong> processId,
            ProcessMemoryType processType,
-           SystemMemoryType systemType):
-  db(db), pid(pid), processId(processId), processType(processType), systemType(systemType)
+           SystemMemoryType systemType,
+           const QDateTime &measurementTime):
+  db(db), pid(pid), processId(processId), processType(processType), systemType(systemType), measurementTime(measurementTime)
 {}
 
 Peak::~Peak()
@@ -157,10 +169,18 @@ void Peak::run()
     }
 
     Measurement measurement;
-    if (!storage.getMemoryPeak(processId.value(), measurement, processType)) {
-      qWarning() << "Failed to read memory peak";
-      deleteLater();
-      return;
+    if (measurementTime.isValid()) {
+      if (!storage.getMeasurementAtOrBefore(processId.value(), measurementTime, measurement, processType)) {
+        qWarning() << "Failed to read memory peak";
+        deleteLater();
+        return;
+      }
+    } else {
+      if (!storage.getMemoryPeak(processId.value(), measurement, processType)) {
+        qWarning() << "Failed to read memory peak";
+        deleteLater();
+        return;
+      }
     }
 
     // Utils::printMeasurementSmapsLike(measurement);
@@ -170,10 +190,18 @@ void Peak::run()
     QDateTime time;
     QList<Measurement> processes;
     MemInfo memInfo;
-    if (!storage.getSystemMemoryPeak(systemType, time, memInfo, processes)) {
-      qWarning() << "Failed to read memory peak";
-      deleteLater();
-      return;
+    if (measurementTime.isValid()) {
+      if (!storage.getSystemMemoryAtOrBefore(measurementTime, time, memInfo, processes)) {
+        qWarning() << "Failed to read memory peak";
+        deleteLater();
+        return;
+      }
+    } else {
+      if (!storage.getSystemMemoryPeak(systemType, time, memInfo, processes)) {
+        qWarning() << "Failed to read memory peak";
+        deleteLater();
+        return;
+      }
     }
 
     // Utils::printMeasurementSmapsLike(measurement);
@@ -239,7 +267,7 @@ int main(int argc, char* argv[]) {
   }
   systemType = sysMemoryTypes[args.systemMemoryType];
 
-  Peak *peak = new Peak(args.databaseFile, args.pid, args.processId, processType, systemType);
+  Peak *peak = new Peak(args.databaseFile, args.pid, args.processId, processType, systemType, args.measurementTime);
   QMetaObject::invokeMethod(peak, "run", Qt::QueuedConnection);
 
   int result = app.exec();

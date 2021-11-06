@@ -200,10 +200,10 @@ void Chart::run()
   MeasurementGroups peak;
   Measurement measurement;
   for (qint64 step = 0; step < pointCount; step ++){
-    storage.getMeasurement(processId.value(),
-                           times[std::min(measurementTo - 1, step * stepSize)],
-                           measurement,
-                           true);
+    storage.getMeasurementAt(processId.value(),
+                             times[std::min(measurementTo - 1, step * stepSize)],
+                             measurement,
+                             true);
 
     Utils::group(measurements[step], measurement, type, true);
     if (peak.sum < measurements[step].sum) {

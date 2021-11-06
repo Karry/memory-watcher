@@ -74,10 +74,15 @@ public:
                      Measurement &measurement,
                      ProcessMemoryType type = Rss);
 
-  bool getMeasurement(qulonglong processId,
-                      const QDateTime &time,
-                      Measurement &measurement,
-                      bool cacheRanges = false);
+  bool getMeasurementAtOrBefore(qulonglong processId,
+                                const QDateTime &time,
+                                Measurement &measurement,
+                                bool cacheRanges);
+
+  bool getMeasurementAt(qulonglong processId,
+                        const QDateTime &time,
+                        Measurement &measurement,
+                        bool cacheRanges = false);
 
   bool getMeasurement(Measurement &measurement, qlonglong &id, bool cacheRanges = false);
 
@@ -86,9 +91,14 @@ public:
                            MemInfo &memInfo,
                            QList<Measurement> &processes);
 
-  bool getSystemMemory(const QDateTime &time,
-                       MemInfo &memInfo,
-                       QList<Measurement> &processes);
+  bool getSystemMemoryAtOrBefore(const QDateTime &time,
+                                 QDateTime &exactTime,
+                                 MemInfo &memInfo,
+                                 QList<Measurement> &processes);
+
+  bool getSystemMemoryAt(const QDateTime &time,
+                         MemInfo &memInfo,
+                         QList<Measurement> &processes);
 
   bool getMeasurementTimes(qulonglong processId, QList<QDateTime> &times);
 

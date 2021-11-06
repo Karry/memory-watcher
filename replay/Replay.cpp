@@ -192,7 +192,7 @@ void Replay::step()
   }
 
   if (processId.has_value()) {
-    if (!storage.getMeasurement(processId.value(), times[cursor], measurement, true)) {
+    if (!storage.getMeasurementAt(processId.value(), times[cursor], measurement, true)) {
       qWarning() << "Failed to read measurement";
       deleteLater();
       return;
@@ -204,7 +204,7 @@ void Replay::step()
     QDateTime time = times[cursor];
     QList<Measurement> processes;
     MemInfo memInfo;
-    if (!storage.getSystemMemory(time, memInfo, processes)) {
+    if (!storage.getSystemMemoryAt(time, memInfo, processes)) {
       qWarning() << "Failed to read memory peak";
       deleteLater();
       return;

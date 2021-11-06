@@ -39,7 +39,8 @@ public:
        std::optional<pid_t> pid,
        std::optional<qulonglong> processId,
        ProcessMemoryType type,
-       SystemMemoryType systemType);
+       SystemMemoryType systemType,
+       const QDateTime &measurementTime);
 
   ~Peak() override;
 
@@ -50,4 +51,5 @@ private:
   std::optional<qulonglong> processId;
   ProcessMemoryType processType{Rss};
   SystemMemoryType systemType{MemAvailable};
+  QDateTime measurementTime;
 };

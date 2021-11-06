@@ -512,9 +512,22 @@ bool Storage::getMemoryPeak(qulonglong processId, Measurement &measurement, Proc
   return execAndGetMeasurement(measurement, sql, false);
 }
 
-bool Storage::getSystemMemory(const QDateTime &time,
-                              MemInfo &memInfo,
-                              QList<Measurement> &processes) {
+bool Storage::getSystemMemoryAtOrBefore(const QDateTime &time,
+                                        QDateTime &exactTime,
+                                        MemInfo &memInfo,
+                                        QList<Measurement> &processes) {
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `system_memory` WHERE "
+              "CAST(STRFTIME('%s',`time`, 'UTC') AS INTEGER) <= CAST(STRFTIME('%s',:time, 'UTC') AS INTEGER) "
+              "ORDER BY CAST(STRFTIME('%s',`time`, 'UTC') AS INTEGER) DESC "
+              "LIMIT 1;");
+  sql.bindValue(":time", time);
+  return execAndGetSystemMemory(sql, exactTime, memInfo, processes);
+}
+
+bool Storage::getSystemMemoryAt(const QDateTime &time,
+                                MemInfo &memInfo,
+                                QList<Measurement> &processes) {
   QSqlQuery sql(db);
   sql.prepare("SELECT * FROM `system_memory` WHERE `time` = :time LIMIT 1;");
   sql.bindValue(":time", time);
@@ -597,10 +610,30 @@ qint64 Storage::measurementCount()
   return varToLong(sql.value("cnt"));
 }
 
-bool Storage::getMeasurement(qulonglong processId,
-                             const QDateTime &time,
-                             Measurement &measurement,
-                             bool cacheRanges) {
+bool Storage::getMeasurementAtOrBefore(qulonglong processId,
+                                       const QDateTime &time,
+                                       Measurement &measurement,
+                                       bool cacheRanges) {
+
+  if (!getProcess(processId, measurement.pid, measurement.processName)) {
+    qWarning() << "Failed to read process details";
+    return false;
+  }
+
+  QSqlQuery sql(db);
+  sql.prepare("SELECT * FROM `measurement` WHERE `process_id` = :process_id AND "
+              "CAST(STRFTIME('%s',`time`, 'UTC') AS INTEGER) <= CAST(STRFTIME('%s',:time, 'UTC') AS INTEGER) "
+              "ORDER BY CAST(STRFTIME('%s',`time`, 'UTC') AS INTEGER) DESC "
+              "LIMIT 1;");
+  sql.bindValue(":process_id", processId);
+  sql.bindValue(":time", time);
+  return execAndGetMeasurement(measurement, sql, cacheRanges);
+}
+
+bool Storage::getMeasurementAt(qulonglong processId,
+                               const QDateTime &time,
+                               Measurement &measurement,
+                               bool cacheRanges) {
 
   if (!getProcess(processId, measurement.pid, measurement.processName)) {
     qWarning() << "Failed to read process details";
