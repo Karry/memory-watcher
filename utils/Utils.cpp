@@ -194,9 +194,9 @@ void Utils::printMeasurement(const Measurement &measurement, ProcessMemoryType t
   }
   group(g, measurement, smapsType);
 
-  constexpr int indent = 80;
+  constexpr int indent = 85;
   constexpr int headerIndent = 16;
-  constexpr int memoryIndent = 20;
+  constexpr int memoryIndent = 12;
 
   std::cout << std::setw(headerIndent) << std::left << "pid:" << measurement.pid << std::endl;
   std::cout << std::setw(headerIndent) << std::left << "process id:" << measurement.processId << std::endl;
