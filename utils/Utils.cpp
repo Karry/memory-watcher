@@ -301,22 +301,23 @@ void Utils::printProcesses(const QDateTime &time,
     return buffer.str();
   };
 
-  size_t rssAnonSum = 0;
+  int64_t rssAnonSum = 0;
   for (auto const &proc: processes) {
+    // take just anonymous process memory, part of pss is counted to cached already
     rssAnonSum += (proc.statm.resident - proc.statm.shared);
   }
-  size_t computedAvailable = memInfo.memFree + memInfo.buffers + (memInfo.cached - memInfo.shmem) + memInfo.swapCache + memInfo.sReclaimable;
-  size_t otherMem = memInfo.memTotal - rssAnonSum - memInfo.slab - memInfo.memFree - memInfo.buffers - memInfo.cached - memInfo.swapCache;
+  int64_t otherMem = memInfo.memTotal - rssAnonSum - memInfo.slab - memInfo.memFree - memInfo.buffers - memInfo.cached - memInfo.swapCache;
+  int64_t computedAvailable = memInfo.memFree + memInfo.buffers + (memInfo.cached - memInfo.shmem) + memInfo.swapCache + memInfo.sReclaimable;
 
   std::cout << "Memory details: " << f(memInfo.memTotal) << " total, " << f(memInfo.memFree) << " free, "
             << f(memInfo.buffers) << " buffers, " << f(memInfo.cached) << " cached (including " << f(memInfo.shmem) << " shmem (tmpfs)), "
             << f(memInfo.swapCache) << " swap cache" << std::endl;
   std::cout << "Kernel:         " << f(memInfo.slab) << " SLAB (" << f(memInfo.sReclaimable) << " reclaimable), " << std::endl
-            << "                ~ " << f(otherMem) << " other kernel memory?" << std::endl;
+            << "                ~ " << f(otherMem) << " other kernel memory? It means: total - anonymous process - slab - free - buffers - cached - swap cache" << std::endl;
   std::cout << "Swap:           " << f(memInfo.swapTotal) << " total, " << f(memInfo.swapFree) << " free (" << p(memInfo.swapFree, memInfo.swapTotal) << ")"<< std::endl;
   std::cout << "Available:      " << f(memInfo.memAvailable) << " (" << p(memInfo.memAvailable, memInfo.memTotal) << ") estimated by kernel" << std::endl;
   std::cout << "                " << f(computedAvailable) << " (" << p(computedAvailable, memInfo.memTotal) << ")"
-            << " computed. It means: MemFree + Buffers + (Cached - Shmem) + SwapCache + SReclaimable" << std::endl;
+            << " computed. It means: free + buffers + (cached - Shmem) + swap cache + slab reclaimable" << std::endl;
 
 
   std::cout << std::endl;
